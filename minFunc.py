@@ -3,6 +3,7 @@ from numpy.linalg import norm
 import scipy.linalg as la
 from enum import IntEnum
 from scipy.optimize import check_grad
+from scipy.optimize import line_search
 from collections import namedtuple
 
 class methods(IntEnum):
@@ -114,6 +115,20 @@ class minFuncoptions:
             else:
                 setattr(self,field,self.getopt(uopt,name,defvalue))
 
+class traceT:
+    def __init__(self,fval,funcCount,optCond):
+        self.fval = fval
+        self.funcCount = funcCount
+        self.optCond = optCond
+
+class outputT:
+    def __init__(self,iterations,funcCount,algorithm,firstOrderopt,message,trace):
+        self.iterations =iterations
+        self.funcCount = funcCount
+        self.algorithm = algorithm
+        self.firstOrderopt = firstOrderopt
+        self.message = message
+        self.trace = trace
 
 # (intentional or unavoidable) differences:
 #  - derivative checking is done differently (and not on Hessians) -- could be fixed
@@ -194,9 +209,6 @@ def minFunc(funObj,x0,options,*args):
         print('{:>10} {:>10} {:>15} {:>15} {:15}'.format('Iteration','FunEvals','Step Length','Function Val','Opt Cond'))
 
     optCond = np.max(np.abs(g))
-
-    traceT = namedtuple('traceT','fval funcCount optCond')
-    outputT = namedtuple('outputT','iterations funcCount algorithm firstorderopt message trace')
 
     if o.noutputs>3:
         trace = traceT(f,funEvals,optCond)
@@ -640,95 +652,153 @@ def minFunc(funObj,x0,options,*args):
             else:
                 dprint('Using 3rd-Order Step')
 
-    if not isLegal(d):
-        print('Step direction is illegal!')
-        return
+        if not isLegal(d):
+            print('Step direction is illegal!')
+            return
 
-    # ************** COMPUTE STEP LENGTH **************
+        # ************** COMPUTE STEP LENGTH **************
 
-    # Directional Derivative
-    gtd = g.T@d
+        # Directional Derivative
+        gtd = g.T@d
 
-    # Check that progress can be made along direction
-    if gtd > -o.progTol:
-        exitflag = 2
-        msg = 'Directional Derivative below progTol'
-        break
+        # Check that progress can be made along direction
+        if gtd > -o.progTol:
+            exitflag = 2
+            msg = 'Directional Derivative below progTol'
+            break
 
-    # Select Initial Guess
-    if i == 1:
-        if o.method < methods.NEWTON0:
-            t = np.min(1,1./np.sum(np.abs(g)))
-        else:
-            t = 1
-    else:
-        if o.LS_init == 0:
-            # Newton step
-            t = 1
-        elif o.LS_init == 1:
-            # Close to previous step length
-            t = t*np.min(2,(gtd_old)/gtd)
-        elif o.LS_init == 2:
-            # Quadratic Initialization based on {f,g} and previous f
-            t = np.min(1,2*(f-f_old)/gtd)
-        elif o.LS_init == 3:
-            # Double previous step length
-            t = np.min(1,t*2)
-        elif o.LS_init == 4:
-            # Scaled step length if possible
-            if HVFunc is None:
-                # No user-supplied Hessian-vector function
-                # use automatic differentiation
-                dHd = d.T@autoHv(d,g,g,0,funObj,*args)
-            else:
-                # Use user-supplid Hessian-vector function
-                dHd = d.T@HvFunc(d,x,*args)
-
-            funEvals += 1
-            if dHd > 0:
-                t = -gtd/dHd
-            else:
-                t = np.min(1,2*(f-f_old)/gtd)
-
-        if t <= 0:
-            t = 1
-
-    f_old = f
-    gtd_old = gtd
-
-    # Compute reference fr is using non-monotone objective
-    if o.Fref == 1:
-        fr = f
-    else:
+        # Select Initial Guess
         if i == 1:
-            old_fvals = np.fill((o.Fref,1)-np.inf)
-
-        if i <= o.Fref:
-            old_fvals(i) = f
+            if o.method < methods.NEWTON0:
+                t = np.min(1,1./np.sum(np.abs(g)))
+            else:
+                t = 1
         else:
-            old_fvals = np.concatenate((old_fvals[0:-1],np.array(f)))
-        fr = np.max(old_fvals)
+            if o.LS_init == 0:
+                # Newton step
+                t = 1
+            elif o.LS_init == 1:
+                # Close to previous step length
+                t = t*np.min(2,(gtd_old)/gtd)
+            elif o.LS_init == 2:
+                # Quadratic Initialization based on {f,g} and previous f
+                t = np.min(1,2*(f-f_old)/gtd)
+            elif o.LS_init == 3:
+                # Double previous step length
+                t = np.min(1,t*2)
+            elif o.LS_init == 4:
+                # Scaled step length if possible
+                if HVFunc is None:
+                    # No user-supplied Hessian-vector function
+                    # use automatic differentiation
+                    dHd = d.T@autoHv(d,g,g,0,funObj,*args)
+                else:
+                    # Use user-supplid Hessian-vector function
+                    dHd = d.T@HvFunc(d,x,*args)
 
-    computeHessian = 0
-    if o.method >= methods.NEWTON:
-        if o.HessianIter == 1:
-            computeHessian = 1
-        elif i>1 and (i-1) % o.HessianIter == 0:
-            computeHessian = 1
+                funEvals += 1
+                if dHd > 0:
+                    t = -gtd/dHd
+                else:
+                    t = np.min(1,2*(f-f_old)/gtd)
 
-    # Line Search
-    f_old = f
-    if o.LS_type == 0: # Use Armijo Bactracking
-        # Perform Backtracking line search
-        if computeHessian:
-            t,x,f,g,LSfunEvals,H = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,o.LS_saveHessianComp,funObj,*args)
+            if t <= 0:
+                t = 1
+
+        f_old = f
+        gtd_old = gtd
+
+        # Compute reference fr is using non-monotone objective
+        if o.Fref == 1:
+            fr = f
         else:
-        
+            if i == 1:
+                old_fvals = np.fill((o.Fref,1)-np.inf)
+
+            if i <= o.Fref:
+                old_fvals(i) = f
+            else:
+                old_fvals = np.concatenate((old_fvals[0:-1],np.array(f)))
+            fr = np.max(old_fvals)
+
+        computeHessian = 0
+        if o.method >= methods.NEWTON:
+            if o.HessianIter == 1:
+                computeHessian = 1
+            elif i>1 and (i-1) % o.HessianIter == 0:
+                computeHessian = 1
+
+        # Line Search
+        f_old = f
+        if o.LS_type == 0: # Use Armijo Bactracking
+            # Perform Backtracking line search
+            if computeHessian:
+                t,x,f,g,LSfunEvals,H = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,o.LS_saveHessianComp,True,funObj,*args)
+            else:
+                t,x,f,g,LSfunEvals = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,1,False,funObj,*args)
+            funEvals += LSfunEvals
+        elif o.LS_type == 1: # Find Point satisfying Wolfe conditions
+            if computeHessian:
+                t,x,f,g,LSfunEvals,H = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,o.LS_saveHessianComp,True,funObj,*args)
+            else:
+                t,x,f,g,LSfunEvals = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,o.LS_saveHessianComp,False,funObj,*args)
+            funEvals += LSfunEvals
+            x += t*d
+        else: # Use toolbox line search
+            # originally used Matlab optim toolbox line search
+            # cannot find documentation for this, currently skipping
+            raise NotImplementedError
+
+        optCond = np.max(np.abs(g))
+        if o.verboseI:
+            print('{:10d} {:10d} {:15.5e} {:15.5e} {:15.5e}'.format(i,funEvals*funEvalMultiplier,t,f,optCond))
+
+        if o.noutputs>3: # update trace
+            trace.fval = np.append(trace.fval,f)
+            trace.funcCount = np.append(trace.funcCount,funEvals)
+            trace.optCond= np.append(trace.optCond,optCond)
+
+        if o.outputFcn is not None: # output function
+            if o.outputFcn(x,'iter',i,funEvals,f,t,gtd,g,d,optCond,*args):
+                exitflag = -1
+                msg = 'Stopped by output function'
+                break
+
+        if optCond <= o.optTol: # check optimality condition
+            exitflag = 1
+            msg = 'Optimality Condition below optTol'
+            break
+
+        # Check for lack of progress
+
+        if np.max(np.abs(t*d)) <= o.progTol:
+            exitflag = 2
+            msg = 'Step Size below progTol'
+            break
+
+        if np.abs(f-f_old) < o.progTol:
+            exitflag = 2
+            msg = 'Function Value changing by less than progTol'
+            break
+
+        # check for going over iteration/evalutation limit
+
+        if funEvals*funEvalMultiplier >= o.maxFunEvals:
+            exitflag = 0
+            msg = 'Reached Maximum Number of Function Evaluations'
+            break
+
+        if i == o.maxIter:
+            exitflag = 0
+            msg = 'Reached Maximum Number of Iterations'
+            break
 
 
-                    
+    if o.verbose: print(msg)
+    if o.noutput > 3:
+        output = outputT(i,funEvals*funEvalMultiplier,method,np.max(np.abs(g)),msg,trace)
 
+    if o.outputFcn is not None:
+        o.outputFcn(x,'done',i,funEvals,f,t,gtd,g,d,np.max(np.abs(g)),*args)
 
-
-
-
+    return gatherret()
