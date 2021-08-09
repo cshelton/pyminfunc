@@ -5,6 +5,7 @@ from enum import IntEnum
 from scipy.optimize import check_grad
 from scipy.optimize import line_search
 from collections import namedtuple
+from util import *
 
 class methods(IntEnum):
     SD = 0,
@@ -16,7 +17,10 @@ class methods(IntEnum):
     QNEWTON = 6,
     NEWTON0 = 7,
     NEWTON = 8,
-    TENSOR = 9
+    TENSOR = 9,
+    SCG = 13,
+    PNEWTON0 = 17,
+    MNEWTON = 18
 
 class minFuncoptions:
     @staticmethod
@@ -48,8 +52,8 @@ class minFuncoptions:
     methoddefaultParams = {
             methods.TENSOR:{},
             methods.NEWTON:{},
-            methods.MNEWTON:{'HessianIter':5},
-            methods.PNEWTON0:{'cgSolve':1},
+            methods.MNEWTON:{'method':methods.NEWTON,'HessianIter':5},
+            methods.PNEWTON0:{'method':methods.PNEWTON0,'cgSolve':1},
             methods.NEWTON0:{},
             methods.QNEWTON:{'Damped':1},
             methods.LBFGS:{},
@@ -97,7 +101,7 @@ class minFuncoptions:
                     )
 
     def __init__(self,options):
-        uopt = {k.upper(),v for k,v in options.items()} 
+        uopt = {k.upper():v for k,v in options.items()} 
         self.verbose = self.getoptbool(uopt,'DISPLAY',(0,'OFF','NONE'),0,1)
         self.verboseI = self.getoptbool(uopt,'DISPLAY',(0,'OFF','NONE','FINAL'),0,1)
         self.debug = self.getoptbool(uopt,'DISPLAY',('FULL','EXCESSIVE'),1,0)
@@ -144,9 +148,9 @@ def minFunc(funObj,x0,options,*args):
     x = x0
     t = 1
 
-    def dprint(*args):
+    def dprint(*args,**kwargs):
         if o.debug:
-            print(*args)
+            print(*args,**kwargs)
 
     def gatherret():
         if o.noutput==1:
@@ -213,7 +217,7 @@ def minFunc(funObj,x0,options,*args):
     if o.noutputs>3:
         trace = traceT(f,funEvals,optCond)
 
-    if optCond <= optTol:
+    if optCond <= o.optTol:
         exitflag = 1
         msg = 'Optimality Condition below topTol'
         if o.verbose: print(msg)
@@ -231,7 +235,7 @@ def minFunc(funObj,x0,options,*args):
                 output = outputT(0,1,o.method,np.max(np.abs(g)),trace)
             return gatherret()
 
-    for i in range(o.maxIter):
+    for i in range(1,o.maxIter+1):
         # to do? replace with match when in python 3.10?
         #      or replace with dictionary dispatch?
         if o.method==methods.SD: # Steepest Descent
@@ -306,7 +310,7 @@ def minFunc(funObj,x0,options,*args):
                     beta = 0
                     d = -g
             g_old = g
-        elif o.method = methods.PCG: # Preconditioned Non-Linear Conjugate Gradient
+        elif o.method == methods.PCG: # Preconditioned Non-Linear Conjugate Gradient
             if o.precFunc is None:
                 if i==1:
                     S = np.zeros((p,o.corrections))
@@ -424,7 +428,7 @@ def minFunc(funObj,x0,options,*args):
                             eta = 0.02
                             if y.T@s < eta*s.T@Bs:
                                 dprint('Damped Update')
-                                theta = min(max(0,((1-eta)*s.^T@Bs)/(s.T@Bs - y.T@s)),1)
+                                theta = min(max(0,((1-eta)*s.T@Bs)/(s.T@Bs - y.T@s)),1)
                                 y = theta*y + (1-theta)*Bs
                             R = cholupdate(cholupdate(R,y/np.sqrt(y.T@s)),Bs/np.sqrt(s.T@Bs),'-')
                         else:
@@ -566,7 +570,7 @@ def minFunc(funObj,x0,options,*args):
                            block_d = D[i+1,i+1]
                            lam = (block_a+block_d)/2 - np.sqrt(4*block_b**2 + (block_a-block_d)**2)/2
                            D[i:i+1,i:i+1] = D[i:i+1,i:i+1]+np.eye(2)*(lam+1e-12)
-                        elif: (i==0 or D[i-1,i]==0) and D[i,i] < 1e-12:
+                        elif (i==0 or D[i-1,i]==0) and D[i,i] < 1e-12:
                                     # not a row of a 2x2 block and diagonal is too smalle
                                 D[i,i] = 1e-12
                     D[perm,:] = mldivide(-L.T,mldivide(D,mldivide(L,g[perm])))
@@ -670,7 +674,7 @@ def minFunc(funObj,x0,options,*args):
         # Select Initial Guess
         if i == 1:
             if o.method < methods.NEWTON0:
-                t = np.min(1,1./np.sum(np.abs(g)))
+                t = min(1.,1./np.sum(np.abs(g)))
             else:
                 t = 1
         else:
@@ -716,7 +720,7 @@ def minFunc(funObj,x0,options,*args):
                 old_fvals = np.fill((o.Fref,1)-np.inf)
 
             if i <= o.Fref:
-                old_fvals(i) = f
+                old_fvals[i] = f
             else:
                 old_fvals = np.concatenate((old_fvals[0:-1],np.array(f)))
             fr = np.max(old_fvals)
@@ -733,15 +737,15 @@ def minFunc(funObj,x0,options,*args):
         if o.LS_type == 0: # Use Armijo Bactracking
             # Perform Backtracking line search
             if computeHessian:
-                t,x,f,g,LSfunEvals,H = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,o.LS_saveHessianComp,True,funObj,*args)
+                t,x,f,g,LSfunEvals,H = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,o.LS_saveHessianComp,True,funObj,*args)
             else:
-                t,x,f,g,LSfunEvals = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,1,False,funObj,*args)
+                t,x,f,g,LSfunEvals = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,1,False,funObj,*args)
             funEvals += LSfunEvals
         elif o.LS_type == 1: # Find Point satisfying Wolfe conditions
             if computeHessian:
-                t,x,f,g,LSfunEvals,H = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,o.LS_saveHessianComp,True,funObj,*args)
+                t,x,f,g,LSfunEvals,H = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,o.LS_saveHessianComp,True,funObj,*args)
             else:
-                t,x,f,g,LSfunEvals = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,o.debug,doPlot,o.LS_saveHessianComp,False,funObj,*args)
+                t,x,f,g,LSfunEvals = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,o.LS_saveHessianComp,False,funObj,*args)
             funEvals += LSfunEvals
             x += t*d
         else: # Use toolbox line search
