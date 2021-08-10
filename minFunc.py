@@ -145,7 +145,7 @@ def minFunc(funObj,x0,options,*args):
     o = minFuncoptions(options)
     p = x0.shape[0]
     d = np.zeros((p,))
-    x = x0
+    x = x0.astype(float)
     t = 1
 
     def dprint(*args,**kwargs):
@@ -153,13 +153,13 @@ def minFunc(funObj,x0,options,*args):
             print(*args,**kwargs)
 
     def gatherret():
-        if o.noutput==1:
+        if o.noutputs==1:
             return x
-        if o.noutput==2:
+        if o.noutputs==2:
             return x,f
-        if o.noutput==3:
+        if o.noutputs==3:
             return x,f,exitflag
-        if o.noutput==4:
+        if o.noutputs==4:
             return x,f,exitflag,output
 
     funEvalMultiplier = 1
@@ -683,13 +683,13 @@ def minFunc(funObj,x0,options,*args):
                 t = 1
             elif o.LS_init == 1:
                 # Close to previous step length
-                t = t*np.min(2,(gtd_old)/gtd)
+                t = t*min(2,(gtd_old)/gtd)
             elif o.LS_init == 2:
                 # Quadratic Initialization based on {f,g} and previous f
-                t = np.min(1,2*(f-f_old)/gtd)
+                t = min(1,2*(f-f_old)/gtd)
             elif o.LS_init == 3:
                 # Double previous step length
-                t = np.min(1,t*2)
+                t = min(1,t*2)
             elif o.LS_init == 4:
                 # Scaled step length if possible
                 if HVFunc is None:
@@ -737,15 +737,15 @@ def minFunc(funObj,x0,options,*args):
         if o.LS_type == 0: # Use Armijo Bactracking
             # Perform Backtracking line search
             if computeHessian:
-                t,x,f,g,LSfunEvals,H = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,o.LS_saveHessianComp,True,funObj,*args)
+                t,x,f,g,LSfunEvals,H = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,dprint,o.doPlot,o.LS_saveHessianComp,True,funObj,*args)
             else:
-                t,x,f,g,LSfunEvals = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,1,False,funObj,*args)
+                t,x,f,g,LSfunEvals = ArmijoBacktrack(x,t,d,f,fr,g,gtd,o.c1,o.LS_interp,o.LS_multi,o.progTol,dprint,o.doPlot,1,False,funObj,*args)
             funEvals += LSfunEvals
         elif o.LS_type == 1: # Find Point satisfying Wolfe conditions
             if computeHessian:
-                t,x,f,g,LSfunEvals,H = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,o.LS_saveHessianComp,True,funObj,*args)
+                t,f,g,LSfunEvals,H = WolfeLineSearch(x,t,d,f,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,25,o.progTol,dprint,o.doPlot,o.LS_saveHessianComp,True,funObj,*args)
             else:
-                t,x,f,g,LSfunEvals = WolfeLineSearch(x,t,d,f,fr,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,o.progTol,dprint,doPlot,o.LS_saveHessianComp,False,funObj,*args)
+                t,f,g,LSfunEvals = WolfeLineSearch(x,t,d,f,g,gtd,o.c1,o.c2,o.LS_interp,o.LS_multi,25,o.progTol,dprint,o.doPlot,True,False,funObj,*args)
             funEvals += LSfunEvals
             x += t*d
         else: # Use toolbox line search
@@ -799,7 +799,7 @@ def minFunc(funObj,x0,options,*args):
 
 
     if o.verbose: print(msg)
-    if o.noutput > 3:
+    if o.noutputs > 3:
         output = outputT(i,funEvals*funEvalMultiplier,method,np.max(np.abs(g)),msg,trace)
 
     if o.outputFcn is not None:

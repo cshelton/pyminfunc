@@ -1,6 +1,7 @@
 import numpy as np
 
 def isLegal(v):
+    if not isinstance(v,np.ndarray): v = np.array(v)
     return not(np.any(np.isinf(v)) or np.any(np.isnan(v)) or np.any(np.iscomplex(v)))
 
 def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,doPlot,saveHessianComp,useH,funObj,*args):
@@ -64,21 +65,21 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
                 funEvals = funEvals + armijoFunEvals
                 return (t,f_new,g_new,funEvals)
 
-        if f_new > f+c1*t*gtd or (LSIter > 1 and f_new >= f_prev):
-            bracket = np.array([t_prev,t])
-            bracketFval = np.array([f_prev,f_new])
-            bracketGval = np.array([g_prev,g_new])
+        if f_new > f+c1*t*gtd or (LSiter > 1 and f_new >= f_prev):
+            bracket = [t_prev,t]
+            bracketFval = [f_prev,f_new]
+            bracketGval = [g_prev,g_new]
             break
         elif np.abs(gtd_new) <= -c2*gtd:
-            bracket = np.array([t])
-            bracketFval = np.array([f_new])
-            bracketGval = np.array([g_new])
+            bracket = [t]
+            bracketFval = [f_new]
+            bracketGval = [g_new]
             done = 1
             break
         elif gtd_new >= 0:
-            bracket = np.array([t_prev,t])
-            bracketFval = np.array([f_prev,f_new])
-            bracketGval = np.array([g_prev,g_new])
+            bracket = [t_prev,t]
+            bracketFval = [f_prev,f_new]
+            bracketGval = [g_prev,g_new]
             break
 
         temp = t_prev
@@ -106,9 +107,9 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
         LSiter += 1
 
     if LSiter == maxLS:
-        bracket = np.array([0,t])
-        bracketFval = np.array([f,f_new])
-        bracketGval = np.array([g,g_new])
+        bracket = [0,t]
+        bracketFval = [f,f_new]
+        bracketGval = [g,g_new]
 
     # Zoom Phase
 
@@ -120,7 +121,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
     LOposRemoved = 0
     while not done and LSiter < maxLS:
         # Find High and Low Points in bracket
-        LOpos = np.argmin(bracketFval)
+        LOpos = 0 if bracketFval[0]<bracketFval[1] else 1
         f_LO = bracketFval[LOpos]
         HIpos = 1-LOpos
 
@@ -130,7 +131,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
             t = np.mean(bracket)
         elif LS_interp==2:
             dprint('Grad-Cubic Interpolation')
-            t = polyinterp(bracket[0:2],bracketFval[0:2],bracketGval[0:2],doPlot)
+            t = polyinterp(bracket[0:2],bracketFval[0:2],[bracketGval[0].T@d,bracketGval[1].T@d],doPlot)
         else:
             # Mixed Case
             nonTpos = 1-Tpos
@@ -141,9 +142,9 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
             t = mixedInterp(bracket,bracketFval,bracketGval,d,Tops,oldLOval,oldLOFval,oldLOGval,dprint,doPlot)
 
         # Test that we are making sufficient progress
-        maxbrac = np.max(bracket)
-        minbrac = np.min(bracket)
-        if min(maxbrac-t,t-minbrac))/(maxbrac-minbrac)) < 0.1:
+        maxbrac = max(bracket)
+        minbrac = min(bracket)
+        if min(maxbrac-t,t-minbrac)/(maxbrac-minbrac) < 0.1:
             dprint('Interpolation close to boundary',end='')
             if insufProgress or t>=maxbrac or t<=minbrac:
                 dprint(', Evaluating at 0.1 away from boundary')
@@ -236,7 +237,7 @@ def mixedInterp(x,f,g,d,Tpos,oldLOval,oldLOFval,oldLOGval,dprint,doPlot):
     oldLOgtd = oldLOGval.T@d
     if f[Tpos] > oldLOFval:
         alpha_c = polyinterp([oldLOval,x[Tpos]],[oldLOFval,f[Tpos]],[oldLOgtd,gtdT],doPlot)
-        alpha_q = polyinterp([oldLOval,x[Tpos]],[oldLOFval,f[Tpos]],[oldLOgtd,None]],doPlot)
+        alpha_q = polyinterp([oldLOval,x[Tpos]],[oldLOFval,f[Tpos]],[oldLOgtd,None],doPlot)
         if abs(alpha_c - oldLOval) < abs(alpha_q - oldLOval):
             dprint('Cubic Interpolation')
             return alpha_c
@@ -268,7 +269,7 @@ def mixedInterp(x,f,g,d,Tpos,oldLOval,oldLOFval,oldLOGval,dprint,doPlot):
             t = max(x[Tpos] + 0.66*(x[nonTpos] - x[Tpos]),t)
 
         return t
-    else
+    else:
         return polyinterp([x[nonTpos],x[Tpos]],[f[nonTpos],f[Tpos]],[gtdNonT,gtdT],doPlot)
 
 def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
@@ -310,8 +311,8 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
         notMinPos = 1-minPos
         d1 = g[minPos] + g[notMinPos] - 3*(g[minPos]-f[notMinPos])/(x[minPos]-x[notMinPos])
         d2 = np.sqrt(d1**2 - g[minPos]*g[notMinPos])
-        if not np.isnan(d2):
-            t = x[notMinPos]-(x[notMinPos]-x[MinPos])*((g[notMinPos]+d2-d1)/(g[notMinPos]-g[minPos]+2*d2))
+        if not np.any(np.isnan(d2)):
+            t = x[notMinPos]-(x[notMinPos]-x[minPos])*((g[notMinPos]+d2-d1)/(g[notMinPos]-g[minPos]+2*d2))
             return min(max(t,xminBound),xmaxBound)
         else:
             return (xmaxBound+xminBound)/2
