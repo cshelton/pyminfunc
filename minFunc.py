@@ -285,7 +285,7 @@ def minFunc(funObj,x0,options,*args):
                 d = -alpha*g
             g_old = g
             myF_old = f
-        elif o.method==methods.CG: # Non-linear Conjugate Gradient
+        elif o.method==methods.CG: # Non-Linear Conjugate Gradient
             if i==1:
                 d = -g
             else:
@@ -634,12 +634,12 @@ def minFunc(funObj,x0,options,*args):
                     precondArgs = (R,)
 
                 # Run cg with the appropriate preconditioner
-                if HvFunc is None:
+                if o.HvFunc is None:
                     # No user-supplied Hessian-vector function
                     d,cgIter,cgRes = confGrad(H,-g,cgForce,cgMaxIter,o.debug,precondFunc,precondArgs)
                 else:
                     # Use user-supplied Hessian-vector function
-                    d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,o.deubg,precondFunc,precondArgs,HvFunc,(x,*args))
+                    d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,o.deubg,precondFunc,precondArgs,o.HvFunc,(x,*args))
                 dprint(f'CG stopped after {cgIter} iterations w/ residual {cgRes:.5e}')
         elif o.method == methods.TENSOR:
             if o.numDiff:
@@ -694,19 +694,19 @@ def minFunc(funObj,x0,options,*args):
                 t = min(1,t*2)
             elif o.LS_init == 4:
                 # Scaled step length if possible
-                if HVFunc is None:
+                if o.HvFunc is None:
                     # No user-supplied Hessian-vector function
                     # use automatic differentiation
-                    dHd = d.T@autoHv(d,g,g,0,funObj,*args)
+                    dHd = d.T@autoHv(d,x,g,0,funObj,*args)
                 else:
                     # Use user-supplid Hessian-vector function
-                    dHd = d.T@HvFunc(d,x,*args)
+                    dHd = d.T@o.HvFunc(d,x,*args)
 
                 funEvals += 1
                 if dHd > 0:
                     t = -gtd/dHd
                 else:
-                    t = np.min(1,2*(f-f_old)/gtd)
+                    t = min(1,2*(f-f_old)/gtd)
 
             if t <= 0:
                 t = 1
