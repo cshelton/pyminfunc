@@ -6,6 +6,8 @@ from scipy.optimize import check_grad
 from scipy.optimize import line_search
 from collections import namedtuple
 from util import *
+from autodif import *
+from lbfgsutil import *
 
 class methods(IntEnum):
     SD = 0,
@@ -53,11 +55,11 @@ class minFuncoptions:
             methods.TENSOR:{},
             methods.NEWTON:{},
             methods.MNEWTON:{'method':methods.NEWTON,'HessianIter':5},
-            methods.PNEWTON0:{'method':methods.PNEWTON0,'cgSolve':1},
+            methods.PNEWTON0:{'method':methods.NEWTON0,'cgSolve':1},
             methods.NEWTON0:{},
             methods.QNEWTON:{'Damped':1},
             methods.LBFGS:{},
-            methods.BB:{},
+            methods.BB:{'LS_type':0,'Fref':20},
             methods.PCG:{'c2':0.2,'LS_init':2},
             methods.SCG:{'method':methods.CG,'c2':0.2,'LS_init':4},
             methods.CG:{'c2':0.2,'LS_init':2},
@@ -374,12 +376,12 @@ def minFunc(funObj,x0,options,*args):
                     lbfgs_end = 0
                     Hdiag = 1
                 else:
-                    S,Y,Ys,lbfgs_start,lbfgs_end,Hdiag,skipped = lbfgsAdd(g-g_old,t*d,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,o.useMex)
+                    S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,skipped = lbfgsAdd(g-g_old,t*d,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,o.useMex)
                     if skipped: dprint('Skipped L-BFGS updated')
                     if o.useMex:
-                        d = lbfgsProc(g,S,Y,Ys,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
+                        d = lbfgsProc(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
                     else:
-                        d = lbfgsProc(g,S,Y,Ys,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
+                        d = lbfgsProc(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
             g_old = g
         elif o.method==methods.QNEWTON:
             if i==1:
@@ -478,8 +480,8 @@ def minFunc(funObj,x0,options,*args):
                     d = -H@g
             g_old = g
         elif o.method==methods.NEWTON0: # Hessian-Free Newton
-            cgMaxIter = np.min(p,o.maxFunEval-funEvals)
-            cgForce = np.min(0.5,np.sqrt(norm(g)))*norm(g)
+            cgMaxIter = min(p,o.maxFunEvals-funEvals)
+            cgForce = min(0.5,np.sqrt(norm(g)))*norm(g)
 
             precondFunc = None
             precondArgs = ()
@@ -499,7 +501,7 @@ def minFunc(funObj,x0,options,*args):
                             precondFunc = lbfgsProd # currently the same either way
                         else:
                             precondFunc = lbfgsProd # currently the same either way
-                        precondArgs = (S,Y,Ys,lbfgs_start,lbfgs_end,Hdiag)
+                        precondArgs = (S,Y,YS,lbfgs_start,lbfgs_end,Hdiag)
                     g_old = g
                 else:
                     precondFunc = o.precFunc
@@ -516,9 +518,9 @@ def minFunc(funObj,x0,options,*args):
                 HvArgs = (x,*args)
 
             if o.useNegCurv:
-                d,cgIter,cgRes,negCurv = conjGrad(None,-g,cgForce,cgMaxIter,o.debug,precondFunc,precondArgs,HvFun,HvArgs,True)
+                d,cgIter,cgRes,negCurv = conjGrad(None,-g,cgForce,cgMaxIter,dprint,precondFunc,precondArgs,HvFun,HvArgs,True)
             else:
-                d,cgIter,cgRes = conjGrad(None,-g,cgForce,cgMaxIter,o.debug,precondFunc,precondArgs,HvFun,HvArgs,False)
+                d,cgIter,cgRes = conjGrad(None,-g,cgForce,cgMaxIter,dprint,precondFunc,precondArgs,HvFun,HvArgs,False)
 
             funEvals += cgIter
             dprint(f'newtonCG stopped on iteration {cgIter} w/ residual {cgRes:.5e}')
@@ -607,7 +609,7 @@ def minFunc(funObj,x0,options,*args):
                         old_stps = np.zeros((g.shape[0],0))
                         Hdiag = 1
                     else:
-                        old_dirs,old_stps,Hdiag = lbfgsUpdate(g-g_old,t*d,o.corrections,o.debug,old_dirs,old_stps,Hdiag)
+                        old_dirs,old_stps,Hdiag = lbfgsUpdate(g-g_old,t*d,o.corrections,dprint,old_dirs,old_stps,Hdiag)
                     g_old = g
                     if o.useMex:
                         precondFunc = lbfgs # currently same either way
@@ -717,10 +719,10 @@ def minFunc(funObj,x0,options,*args):
             fr = f
         else:
             if i == 1:
-                old_fvals = np.fill((o.Fref,1)-np.inf)
+                old_fvals = np.full((o.Fref,1),-np.inf)
 
             if i <= o.Fref:
-                old_fvals[i] = f
+                old_fvals[i-1] = f
             else:
                 old_fvals = np.concatenate((old_fvals[0:-1],np.array(f)))
             fr = np.max(old_fvals)

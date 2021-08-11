@@ -182,8 +182,8 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
             elif gtd_new*(bracket[HIpos]-bracket[LOpos]) >= 0:
                 # old HI becomes new LO
                 bracket[HIpos] = bracket[LOpos]
-                bracketF[HIpos] = bracketF[LOpos]
-                bracketG[HIpos] = bracketG[LOpos]
+                bracketFval[HIpos] = bracketFval[LOpos]
+                bracketGval[HIpos] = bracketGval[LOpos]
                 if LS_interp == 3:
                     dprint('LO Pos is being removed!')
                     LOposRemoved = 1
@@ -290,17 +290,18 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
 #   set f or g to sqrt(-1) if they are not known
 #   the order of the polynomial is the number of known f and g values minus 1
 
-# this is only called with 2 points, so it has been trimmed to only handle
-# that case (and sqrt(-1) replaced with None)
+# (sqrt(-1) replaced with None)
 
-    order = 3 - f.count(None)+f.count(None)
+    nPoints = len(x)
+    order = nPoints*2 - 1 - f.count(None)+f.count(None)
     xmin = min(x)
     xmax = max(x)
 
     if xminBound is None: xminBound = xmin
     if xmaxBound is None: xmaxBound = xmax
 
-    if order==3 and doPlot==0:
+
+    if nPoints == 2 and order==3 and doPlot==0:
         # Solution in this case (where x2 is the farthest point):
         #    d1 = g1 + g2 - 3*(f1-f2)/(x1-x2);
         #    d2 = sqrt(d1^2 - g1*g2);
@@ -309,7 +310,7 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
         minPos = 0 if x[0]<x[1] else 1
         minVal = x[minPos]
         notMinPos = 1-minPos
-        d1 = g[minPos] + g[notMinPos] - 3*(g[minPos]-f[notMinPos])/(x[minPos]-x[notMinPos])
+        d1 = g[minPos] + g[notMinPos] - 3*(f[minPos]-f[notMinPos])/(x[minPos]-x[notMinPos])
         d2 = np.sqrt(d1**2 - g[minPos]*g[notMinPos])
         if not np.any(np.isnan(d2)):
             t = x[notMinPos]-(x[notMinPos]-x[minPos])*((g[notMinPos]+d2-d1)/(g[notMinPos]-g[minPos]+2*d2))
@@ -320,7 +321,7 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
     # Constraints Based on available Function Values
     A = np.zeros((0,order+1))
     b = np.zeros(0)
-    for i in range(2):
+    for i in nPoints:
         if f[i] is not None:
             constraint = np.zeros((1,order+1))
             for j in range(order-1,-1,-1):
@@ -329,7 +330,7 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
             b = np.concatenate((b,np.array(f[i])))
 
     # Constraints based on available Derivatives
-    for i in range(2):
+    for i in nPoints:
         if g[i] is not None:
             constraint = np.zeros((1,order+1))
             for j in range(order):
@@ -346,9 +347,9 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
         dParams[i] = params[i]*(order-i)
 
     if np.any(np.isinf(dParams)):
-        cp = np.array([xminBound,xmaxBound,x[0]])
+        cp = np.concatenate((np.array([xminBound,xmaxBound],x)))
     else:
-        cp = np.concatenate(np.array([xminBound,xmaxBound,x[0]]),np.roots(dParams))
+        cp = np.concatenate((np.array([xminBound,xmaxBound]),x,np.roots(dParams)))
 
     # Test Critical Points
     fmin = np.inf
@@ -379,3 +380,186 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
             plt.pause(1)
 
     return minPos
+
+def ArmijoBacktrack(x,t,d,f,fr,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot,saveHessianComp,useH,funObj,*args):
+# from original Matlab code:
+# [t,x_new,f_new,g_new,funEvals,H] = ArmijoBacktrack(...
+#    x,t,d,f,fr,g,gtd,c1,LS_interp,LS_multi,progTol,debug,doPlot,saveHessianComp,funObj,varargin)
+#
+# Backtracking linesearch to satisfy Armijo condition
+#
+# Inputs:
+#   x: starting location
+#   t: initial step size
+#   d: descent direction
+#   f: function value at starting location
+#   fr: reference function value (usually funObj(x))
+#   gtd: directional derivative at starting location
+#   c1: sufficient decrease parameter
+#   debug: display debugging information
+#   LS_interp: type of interpolation
+#   progTol: minimum allowable step length
+#   doPlot: do a graphical display of interpolation
+#   funObj: objective function
+#   varargin: parameters of objective function
+#
+# Outputs:
+#   t: step length
+#   f_new: function value at x+t*d
+#   g_new: gradient value at x+t*d
+#   funEvals: number function evaluations performed by line search
+#   H: Hessian at initial guess (only computed if requested)
+#
+# recet change: LS changed to LS_interp and LS_multi
+
+    # Evaluate the Objective and Gradient at the Initial Step
+    if useH:
+        (f_new,g_new,H) = funObj(x+t*d,*args)
+    else:
+        (f_new,g_new) = funObj(x+t*d,*args)
+    funEvals = 1
+
+    while f_new > fr + c1*t*gtd or not isLegal(f_new):
+        temp = t
+
+        if LS_interp == 0 or not isLegal(f_new):
+            # Ignore value of new point
+            dprint('Fixed BT')
+            t *= 0.5
+        elif LS_interp == 1 or not isLegal(g_new):
+            # Use function value at new point, but not its derivative
+            if funEvals < 2 or LS_multi == 0 or not isLegal(f_prev):
+                # Backtracking w/ quadratic interpolation based on two points
+                dprint('Quad BT')
+                t = polyinterp([0,t],[f,f_new],[gtd,None],doPlot,0,t)
+            else:
+                # Backtracking w/ cubic interpolation based on three points
+                dprint('Cubic BT')
+                t = polyinterp([0,t],[f,f_new],[None,None],doPlot,0,t)
+        else:
+            #Use function value and derivative at new point
+
+            if funEvals < 2 or LS_multi == 0 or not isLegal(f_prev):
+                # Backtracking w/ cubic interpolation w/ derivative
+                dprint('Grad-Cubic BT')
+                t = polyinterp([0,t],[f,f_new],[gtd,g_new.T@d],doPlot,0,t)
+            elif not isLegal(g_prev):
+                # Backtracking w/ quartic interpolation 3 points and derivative of two
+                dprint('Grad-Quartic BT')
+                t = polyinterp([0,t,t_prev],[f,f_new,f_prev],[gtd,g_new.T@d,None],doPlot,0,t)
+            else:
+                # Backtracking w/ quintic interpolation of 3 poitns and derivative of two
+                dprint('Grad-Quintic BT')
+                t = polyinterp([0,t,t_prev],[f,f_new,f_prev],[gtd,g_new.T@d,g_prev.T@d],doPlot,0,t)
+
+        # Adjust if change in t is too small/large
+        if t < temp*1e-3:
+            dprint('Interpolated Value Too Small, Adjusting')
+            t = temp*1e-3
+        elif t > temp*0.6:
+            dprint('Interpolated Value Too Large, Adjusting')
+            t = temp*0.6
+
+        # Store old point if doing three-point interpolation
+        if LS_multi:
+            f_prev = f_new
+            t_prev = temp
+            if LS_interp == 2: g_prev = g_new
+
+        if not saveHessianComp and useH:
+            (f_new,g_new,H) = funObj(x+t*d,*args)
+        else:
+            (f_new,g_new) = funObj(x+t*d,*args)
+        funEvals += 1
+
+        # Check whether step size has become too small
+        if np.max(np.abs(t*d)) <= progTol:
+            dprint('Backtracking Line Search Failed')
+            t = 0
+            f_new = f
+            g_new = g
+            break
+
+    # Evaluate Hessian at new point
+    if useH and funEvals>1 and saveHessianComp:
+        (f_new,g_new,H) = funObj(x+t*d,*args)
+        funEvals += 1
+
+    x_new = x+t*d
+    if useH:
+        return (t,x_new,f_new,g_new,funEvals,H)
+    else:
+        return (t,x_new,f_new,g_new,funEvals)
+
+
+def conjGrad(A,b,optTol,maxIter,dprint,precFunc=None,precArgs=None,matrixVectFunc=None,matrixVectArgs=None,retnegCurv=False):
+# original Matlab comments:
+# [x,k,res,negCurv] =
+# cg(A,b,optTol,maxIter,verbose,precFunc,precArgs,matrixVectFunc,matrixVect
+# Args)
+# Linear Conjugate Gradient, where optionally we use
+# - preconditioner on vector v with precFunc(v,precArgs{:})
+# - matrix multipled by vector with matrixVectFunc(v,matrixVectArgs{:})
+
+    x = np.zeros(b.shape[0])
+    r = -b
+
+    # Apply preconditioner (if supplied)
+    if precFunc is not None:
+        y = precFunc(r,*precArgs)
+    else:
+        y = r
+
+    ry = r.T@y
+    p = -y
+    k = 0
+
+    res = np.linalg.norm(r)
+    done = 0
+    while res > optTol and k < maxIter and not done:
+        # Compute Matrix-vector product
+        if matrixVectFunc is not None:
+            Ap = matrixVectFunc(p,*matrixVectArgs)
+        else:
+            Ap = A@p
+        pAp = p.T@Ap
+
+        # Check for negative Curvature
+        if pAp <= 1e-16:
+            dprint('Negative Curvature Detected!')
+
+            if retnegCurv:
+                if pAp < 0:
+                    return (x,k,res,p)
+
+            if k == 0:
+                dprint('First-Iter, Proceeding...')
+                done = 1
+            else:
+                dprint('Stopping')
+                break
+
+        # Conjugate Gradient
+        alpha = ry/(pAp)
+        x += alpha*p
+        r += alpha*Ap
+        
+        # If supplied, apply preconditioner
+        if precFunc is not None:
+            y = precFunc(r,*precArgs)
+        else:
+            y = r
+        
+        ry_new = r.T@y
+        beta = ry_new/ry
+        p = -y + beta*p
+        k += 1
+
+        # Update variables
+        ry = ry_new
+        res = np.linalg.norm(r)
+
+    if retnegCurv:
+        return (x,k,res,None)
+    else:
+        return (x,k,res)
