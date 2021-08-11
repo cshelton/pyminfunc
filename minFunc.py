@@ -293,17 +293,17 @@ def minFunc(funObj,x0,options,*args):
                 if o.cgUpdate == 0:
                     # Fletcher-Reeves
                     beta = g.T@g / gotgo
-                elif cgUpdate == 1:
+                elif o.cgUpdate == 1:
                     # Polak-Ribiere
                     beta = (g.T@(g-g_old)) / gotgo
-                elif cgUpdate == 2:
+                elif o.cgUpdate == 2:
                     # Hestenes-Stiefel
-                    beta = (g.T@(g-g_old)) / ((g-g_gold).T@d)
+                    beta = (g.T@(g-g_old)) / ((g-g_old).T@d)
                 else:
                     # Gilbert-Nocedal
                     beta_FR = (g.T@(g-g_old)) / gotgo
                     beta_PR = (g.T@g - g.T@g_old) / gotgo
-                    beta = np.max(-beta_FT,np.min(beta_PR,beta_FR))
+                    beta = max(-beta_FR,min(beta_PR,beta_FR))
                 d = -g + beta*d
 
                 # Restart if not a direction of sufficient descent
