@@ -12,7 +12,7 @@ def rosenbrock3(x):
     return rosen(x), rosen_der(x), rosen_hess(x)
 
 
-x,fval,exitflag = minFunc(rosenbrock2,np.array([0,0]),{'maxFunEvals':25,'method':'scg','display':'FULL'})
+x,fval,exitflag = minFunc(rosenbrock2,np.array([0,0]),{'maxFunEvals':25,'method':'lbfgs','display':'FULL'})
 print(x,fval,exitflag)
 
 

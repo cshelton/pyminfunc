@@ -326,9 +326,10 @@ def minFunc(funObj,x0,options,*args):
                     (S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,skipped) = lbfgsAdd(g-g_old,t*d,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,o.useMex)
                     if skipped: dprint('Skipped L-BFGS updated')
                     if o.useMex:
-                        precondFunc = lbfgsProd # same either way, currently
+                        # same either way, currently
+                        s = lbfgsProd(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag)
                     else:
-                        precondFunc = lbfgsProd # same either way, currently
+                        s = lbfgsProd(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag)
             else:
                 s = o.precFunc(-g,x,*args)
 
@@ -351,7 +352,7 @@ def minFunc(funObj,x0,options,*args):
                     dprint('Restarting CG')
                     beta = 0
                     d = s
-            g_gold = g
+            g_old = g
             s_old = s
         elif o.method==methods.LBFGS: # L-BFGS
             if o.Damped:

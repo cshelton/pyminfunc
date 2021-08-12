@@ -34,7 +34,7 @@ def lbfgsAdd(y,s,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,useMex):
     else:
         return (S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,1)
 
-def lbfgsProd(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag):
+def lbfgsProc(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag):
 # BFGS Search Direction
 #
 # This function returns the (L-BFGS) approximate inverse Hessian,
