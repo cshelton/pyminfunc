@@ -16,6 +16,9 @@ if nargout > 1
   df = zeros(D, 1);
   df(1:D-1) = - 400*x(1:D-1).*(x(2:D)-x(1:D-1).^2) - 2*(1-x(1:D-1));
   df(2:D) = df(2:D) + 200*(x(2:D)-x(1:D-1).^2);
+  %fid = fopen('rosenlog.txt','a+')
+  %fprintf(fid,'%.20g %.20g %.20g %.20g %.20g\n',x(1),x(2),f,df(1),df(2))
+  %fclose(fid)
 end
 
 if nargout > 2

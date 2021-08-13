@@ -24,7 +24,7 @@ ry = r'*y;
 p = -y;
 k = 0;
 
-res = norm(r);
+res = mynorm(r);
 done = 0;
 negCurv = [];
 while res > optTol & k < maxIter & ~done
@@ -81,6 +81,6 @@ while res > optTol & k < maxIter & ~done
 
     % Update variables
     ry = ry_new;
-    res = norm(r);
+    res = mynorm(r);
 end
 end

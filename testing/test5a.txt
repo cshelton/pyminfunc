@@ -1,6 +1,6 @@
 rosenbrock rosenbrock2
 0 0
-Method sd
+Method pnewton0
 maxFunEvals 25
 useMex 0
 display full

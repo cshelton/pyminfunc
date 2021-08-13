@@ -5,7 +5,7 @@ function [f,g,H,T] = autoTensor(x,type,funObj,varargin)
 p = length(x);
 
 if type == 2
-	mu = 2*sqrt(1e-12)*(1+norm(x));
+	mu = 2*sqrt(1e-12)*(1+mynorm(x));
     
 	f1 = zeros(p,1);
 	f2 = zeros(p,2);
@@ -38,7 +38,7 @@ elseif type == 3 % Use Complex Differentials
     H = mean(real(diff),3);
     T = imag(diff)/mu;
 else % Use finite differencing
-    mu = 2*sqrt(1e-12)*(1+norm(x));
+    mu = 2*sqrt(1e-12)*(1+mynorm(x));
     
     [f,g,H] = funObj(x,varargin{:});
     diff = zeros(p,p,p);

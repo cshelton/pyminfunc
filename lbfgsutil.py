@@ -34,7 +34,7 @@ def lbfgsAdd(y,s,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,useMex):
     else:
         return (S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,1)
 
-def lbfgsProc(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag):
+def lbfgsProd(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag):
 # BFGS Search Direction
 #
 # This function returns the (L-BFGS) approximate inverse Hessian,
@@ -79,7 +79,44 @@ def lbfgsUpdate(y,s,corrections,dprint,old_dirs,old_stps,Hdiag):
         Hdiag = ys/(y.T@y)
     else:
         dprint('Skipping Update')
-    return (old_dits,old_stps,Hdiag)
+    return (old_dirs,old_stps,Hdiag)
+
+def dampedUpdate(y,s,corrections,dprint,old_dirs,old_stps,Hdiag):
+    S = old_dirs[:,1:] # m*k
+    Y = old_stps[:,1:] # m*k
+    k = Y.shape[1] 
+    L = np.zeros((k,k)) # k*k
+    for j in range(k):  # cshelton: seems like this could be w/o loops
+        for k in range(j+1,k):
+            L[i,j] = S[:,i].T@Y[:,j] 
+    D = np.diag(np.diag(S.T@Y)) # k*k
+    N = np.hstack((S/Hdiag,Y)) # k*(2k)
+    M = np.vstack((np.hstack((S.T@S/Hdiag, L)),
+                   np.hstack((L.T,        -D)))) # (2k)*(2k)
+
+    ys = y.T@s
+    Bs = s/Hdiag - N@(np.linalg.solve(M,N.T@s)) # Product B*s
+    sBs = s.T@Bs
+
+    eta = .02
+    if ys < eta*sBs:
+        dprint('Damped Update')
+        theta = min(max(0,((1-eta)*sBs)/(sBs-ys)),1)
+        y = theta*y + (1-theta)*Bs
+
+    numCorrections = old_dirs.shape[1]
+    if numCorrections < corrections:
+        old_dirs = np.hstack((old_dirs,s[:,None]))
+        old_stps= np.hstack((old_stps,y[:,None]))
+    else:
+        np.roll(old_dirs,-1,axis=1)
+        np.roll(old_stps,-1,axis=1)
+        old_dirs[:,numCorrections] = s
+        old_stps[:,numCorrections] = y
+
+    Hdiag = (y.T@s)/(y.T@y)
+    return (old_dirs,old_stps,Hdiag)
+
 
 def lbfgs(g,s,y,Hdiag):
 # comments from original Matlab code:
@@ -104,7 +141,7 @@ def lbfgs(g,s,y,Hdiag):
     q = np.zeros((p,k+1))
     r = np.zeros((p,k+1))
     al = np.zeros(k)
-    be = np.zerso(k)
+    be = np.zeros(k)
 
     q[:,k] = g
     for i in range(k-1,-1,-1):
@@ -118,7 +155,7 @@ def lbfgs(g,s,y,Hdiag):
         be[i] = ro[i]*y[:,i].T@r[:,i]
         r[:,i+1] = r[:,i] + s[:,i]*(al[i]-be[i])
 
-    return r[:,k+1]
+    return r[:,k]
 
 
 

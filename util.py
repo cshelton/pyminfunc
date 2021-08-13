@@ -311,8 +311,9 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
         minVal = x[minPos]
         notMinPos = 1-minPos
         d1 = g[minPos] + g[notMinPos] - 3*(f[minPos]-f[notMinPos])/(x[minPos]-x[notMinPos])
-        d2 = np.sqrt(d1**2 - g[minPos]*g[notMinPos])
-        if not np.any(np.isnan(d2)):
+        d2 = d1**2 - g[minPos]*g[notMinPos]
+        if not np.any(d2 < 0):
+            d2 = np.sqrt(d2)
             t = x[notMinPos]-(x[notMinPos]-x[minPos])*((g[notMinPos]+d2-d1)/(g[notMinPos]-g[minPos]+2*d2))
             return min(max(t,xminBound),xmaxBound)
         else:

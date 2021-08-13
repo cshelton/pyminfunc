@@ -638,7 +638,7 @@ for i = 1:maxIter
 
                     Bs = R'*(R*s);
                     ymBs = y-Bs;
-                    if abs(s'*ymBs) >= norm(s)*norm(ymBs)*1e-8 && (s-((R\(R'\y))))'*y > 1e-10
+                    if abs(s'*ymBs) >= mynorm(s)*mynorm(ymBs)*1e-8 && (s-((R\(R'\y))))'*y > 1e-10
                         R = cholupdate(R,-ymBs/sqrt(ymBs'*s),'-');
                     else
                         if debug
@@ -718,7 +718,7 @@ for i = 1:maxIter
         case NEWTON0 % Hessian-Free Newton
 
             cgMaxIter = min(p,maxFunEvals-funEvals);
-            cgForce = min(0.5,sqrt(norm(g)))*norm(g);
+            cgForce = min(0.5,sqrt(mynorm(g)))*mynorm(g);
 
             % Set-up preconditioner
             precondFunc = [];
@@ -781,7 +781,7 @@ for i = 1:maxIter
                     %if debug
                     fprintf('Using negative curvature direction\n');
                     %end
-                    d = negCurv/norm(negCurv);
+                    d = negCurv/mynorm(negCurv);
                     d = d/sum(abs(g));
                 end
             end
@@ -864,7 +864,7 @@ for i = 1:maxIter
             else
                 % Solve with Conjugate Gradient
                 cgMaxIter = p;
-                cgForce = min(0.5,sqrt(norm(g)))*norm(g);
+                cgForce = min(0.5,sqrt(mynorm(g)))*mynorm(g);
 
                 % Select Preconditioner
                 if cgSolve == 1

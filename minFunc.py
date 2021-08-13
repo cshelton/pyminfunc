@@ -147,7 +147,7 @@ def minFunc(funObj,x0,options,*args):
     o = minFuncoptions(options)
     p = x0.shape[0]
     d = np.zeros((p,))
-    x = x0.astype(float)
+    x = x0.astype(np.double)
     t = 1
 
     def dprint(*args,**kwargs):
@@ -281,7 +281,7 @@ def minFunc(funObj,x0,options,*args):
                     if i<=2:
                         v = np.zeros(5)
                     v[(i-2)%5] = alpha
-                    alpha = v[np.random.randint(min(i-2,5))]
+                    alpha = v[np.random.randint(min(i-1,5))]
                 d = -alpha*g
             g_old = g
             myF_old = f
@@ -346,7 +346,7 @@ def minFunc(funObj,x0,options,*args):
                     # Preconditioned Gilbert-Nocedal
                     beta_FR = (g.T@s)/(g_old.T@s_old)
                     beta_PR = (g.T@(s-s_old))/(g_old.T@s_old)
-                    beta = np.max(-beta_FR,np.min(beta_PR,beta_FR))
+                    beta = max(-beta_FR,min(beta_PR,beta_FR))
                 d = s + beta*d
                 if g.T@d > -o.progTol:
                     dprint('Restarting CG')
@@ -380,9 +380,9 @@ def minFunc(funObj,x0,options,*args):
                     S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,skipped = lbfgsAdd(g-g_old,t*d,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag,o.useMex)
                     if skipped: dprint('Skipped L-BFGS updated')
                     if o.useMex:
-                        d = lbfgsProc(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
+                        d = lbfgsProd(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
                     else:
-                        d = lbfgsProc(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
+                        d = lbfgsProd(g,S,Y,YS,lbfgs_start,lbfgs_end,Hdiag) # currently the same either way
             g_old = g
         elif o.method==methods.QNEWTON:
             if i==1:
@@ -484,6 +484,7 @@ def minFunc(funObj,x0,options,*args):
             cgMaxIter = min(p,o.maxFunEvals-funEvals)
             cgForce = min(0.5,np.sqrt(norm(g)))*norm(g)
 
+            # Set-up preconditioner
             precondFunc = None
             precondArgs = ()
             if o.cgSolve == 1:
@@ -528,7 +529,8 @@ def minFunc(funObj,x0,options,*args):
 
             if o.useNegCurv:
                 if negCurv is not None:
-                    dprint('Using negative curvature direction')
+                    #dprint('Using negative curvature direction')
+                    print('Using negative curvature direction')
                     d = negCurv/norm(negCurv)
                     d = d/np.sum(np.abs(g))
 

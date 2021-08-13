@@ -1,7 +1,8 @@
 rosenbrock rosenbrock2
 0 0
-Method sd
+Method newton0
 maxFunEvals 25
+cgSolve 1
 useMex 0
 display full
 noutputs 4
