@@ -6,9 +6,11 @@ addpath('../minFunc_2012/minFunc');
 
 fid = fopen(filename);
 line = fgetl(fid);
-funname = line;
+funname = textscan(line,'%s %s');
+funname = funname{1}{1};
 line = fgetl(fid);
 x0 = str2num(line);
+x0 = x0';
 options = [];
 args = {};
 procargs = false;
@@ -29,39 +31,57 @@ while ischar(line)
 			options = setfield(options,fname,fvalstr);
 		end
 	end
-	line = fgetl(fid)
+	line = fgetl(fid);
 end
 
-display(options)
 
 fprintf('===START HERE\n')
 if length(procargs)==0
-	eval(['[x,f,exitflag,output] = minFunc(@' funname ',x0,options);'])
+	evalstr = ['minFunc(@' funname ',x0,options);'];
 else
-	eval(['[x,f,exitflag,output] = minFunc(@' funname ',x0,options' strjoin(args,',') ');'])
+	evalstr = ['minFunc(@' funname ',x0,options' strjoin(args,',') ');'];
+end
+if ~isfield(options,'noutputs') || options.noutputs == 3
+	eval(['[x,f,exitflag] = ' evalstr]);
+	nout = 3;
+elseif options.noutputs == 1
+	eval(['x = ' evalstr]);
+	nout = 1;
+elseif options.noutputs == 2
+	eval(['[x,f] = ' evalstr]);
+	nout = 2;
+else
+	eval(['[x,f,exitflag,output] = ' evalstr]);
+	nout = 4;
 end
 
-fprintf('x [')
-fprintf('%f ',x(1:end-1))
-fprintf('%f]\n',x(end))
-fprintf('f %f\n',f)
-fprintf('exitflag %d\n',exitflag)
-fprintf('output.iterations %d\n',output.iterations)
-fprintf('output.funcCount %d\n',output.funcCount)
-fprintf('output.algorithm %d\n',output.algorithm)
-fprintf('output.firstorderopt %f\n',output.firstorderopt)
-fprintf('output.message %s\n',output.message)
-fprintf('output.trace.fval ')
-fprintf('%f ',output.trace.fval)
-fprintf('\n')
-fprintf('output.trace.funcCount ')
-fprintf('%d ',output.trace.funcCount)
-fprintf('\n')
-fprintf('output.trace.optCond ')
-fprintf('%f ',output.trace.optCond)
-fprintf('\n')
-fprintf('===END HERE\n')
-exit(0)
+fprintf('x [');
+fprintf('%.10g ',x(1:end-1));
+fprintf('%.10g]\n',x(end));
+if nout>1
+	fprintf('f %.10g\n',f);
+end
+if nout>2
+	fprintf('exitflag %d\n',exitflag);
+end
+if nout>3
+	fprintf('output.iterations %d\n',output.iterations);
+	fprintf('output.funcCount %d\n',output.funcCount);
+	fprintf('output.algorithm %d\n',output.algorithm);
+	fprintf('output.firstorderopt %.10g\n',output.firstorderopt);
+	fprintf('output.message %s\n',output.message);
+	fprintf('output.trace.fval ');
+	fprintf('%.10g ',output.trace.fval);
+	fprintf('\n');
+	fprintf('output.trace.funcCount ');
+	fprintf('%d ',output.trace.funcCount);
+	fprintf('\n');
+	fprintf('output.trace.optCond ');
+	fprintf('%.10g ',output.trace.optCond);
+	fprintf('\n');
+end
+fprintf('===END HERE\n');
+exit(0);
 
 
 

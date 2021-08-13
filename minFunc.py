@@ -132,7 +132,7 @@ class outputT:
         self.iterations =iterations
         self.funcCount = funcCount
         self.algorithm = algorithm
-        self.firstOrderopt = firstOrderopt
+        self.firstorderopt = firstOrderopt
         self.message = message
         self.trace = trace
 
@@ -212,7 +212,7 @@ def minFunc(funObj,x0,options,*args):
             # to do? 7/7/21: implement Hessian check (if computeHessian is true)
     
     if o.verboseI:
-        print('{:>10} {:>10} {:>15} {:>15} {:15}'.format('Iteration','FunEvals','Step Length','Function Val','Opt Cond'))
+        print('{:>10} {:>10} {:>15} {:>15} {:>15}'.format('Iteration','FunEvals','Step Length','Function Val','Opt Cond'))
 
     optCond = np.max(np.abs(g))
 
@@ -803,7 +803,7 @@ def minFunc(funObj,x0,options,*args):
 
     if o.verbose: print(msg)
     if o.noutputs > 3:
-        output = outputT(i,funEvals*funEvalMultiplier,method,np.max(np.abs(g)),msg,trace)
+        output = outputT(i,funEvals*funEvalMultiplier,o.method,np.max(np.abs(g)),msg,trace)
 
     if o.outputFcn is not None:
         o.outputFcn(x,'done',i,funEvals,f,t,gtd,g,d,np.max(np.abs(g)),*args)

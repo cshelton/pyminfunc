@@ -1,17 +1,19 @@
 import sys
 sys.path.insert(0,'../')
 from minFunc import minFunc
+import numpy as np
+from rosen import *
 
 def runone(filename):
     with open(filename) as fid:
-        line = fid.readline()
-        funname = line
-        line = fid.readline()
+        line = fid.readline().rstrip()
+        funname = line.split()[1]
+        line = fid.readline().rstrip()
         x0 = np.fromstring(line,sep=' ')
         options = {}
         args = []
         procargs = False
-        line = fid.readline()
+        line = fid.readline().rstrip()
         while line:
             if line == '':
                 procargs = true
@@ -28,27 +30,42 @@ def runone(filename):
                     except ValueError:
                         continue
                 options[fname] = fval
-            line = fid.readline()
+            line = fid.readline().rstrip()
 
-    print(options)
 
     print('===START HERE')
-    if len(procargs)==0:
-        eval('(x,f,exitflag,output) = minFunc('+funname+',x0,options)')
+    if len(args)==0:
+        exestr = 'minFunc('+funname+',x0,options)'
     else:
-        eval('(x,f,exitflag,output) = minFunc('+funname+',x0,options'+','.join(args)+')')
+        exestr = 'minFunc('+funname+',x0,options'+','.join(args)+')'
 
-    print('x',x)
-    print('f',f)
-    print('exitflag',exitflag)
-    print('output.iterations',output.iterations)
-    print('output.funcCount ',output.funcCount)
-    print('output.algorithm ',output.algorithm)
-    print('output.firstorderopt ',output.firstorderopt)
-    print('output.message ',output.message)
-    print('output.trace.fval ',' '.join(output.trace.fval))
-    print('output.trace.funcCount ',' '.join(output.trace.funcCount))
-    print('output.trace.optCond ',' '.join(output.trace.optCond))
+    if 'noutputs' not in options or options['noutputs'] == 3:
+        x,f,exitflag = eval('minFunc('+funname+',x0,options)')
+        output = None
+    elif options['noutputs'] == 1:
+        x = eval('minFunc('+funname+',x0,options)')
+        f = None
+        exitflag = None
+        output = None
+    elif options['noutputs'] == 2:
+        x,f = eval('minFunc('+funname+',x0,options)')
+        exitflag = None
+        output = None
+    elif options['noutputs'] == 4:
+        x,f,exitflag,output = eval('minFunc('+funname+',x0,options)')
+
+    print('x ['+' '.join(['{:.10g}'.format(v) for v in x])+']')
+    if f is not None: print(f'f {f:.10g}')
+    if exitflag is not None: print('exitflag',exitflag)
+    if output is not None:
+        print('output.iterations',output.iterations)
+        print('output.funcCount',output.funcCount)
+        print(f'output.algorithm {output.algorithm:d}')
+        print(f'output.firstorderopt {output.firstorderopt:.10g}')
+        print('output.message',output.message)
+        print('output.trace.fval',' '.join(['{:.10g}'.format(v) for v in output.trace.fval])+' ')
+        print('output.trace.funcCount',' '.join(['{:d}'.format(v) for v in output.trace.funcCount])+' ')
+        print('output.trace.optCond',' '.join(['{:.10g}'.format(v) for v in output.trace.optCond])+' ')
     print('===END HERE\n')
 
-runone(argv[0])
+runone(sys.argv[1])
