@@ -445,7 +445,6 @@ for i = 1:maxIter
 
 
         case CG % Non-Linear Conjugate Gradient
-
             if i == 1
                 d = -g; % Initially use steepest descent direction
             else
