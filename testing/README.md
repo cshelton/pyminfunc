@@ -13,8 +13,8 @@ A few notes on that attempt:
 - some operations produce different results in Matlab and numpy.  For example, for the
   matrix and vector
 
-	A = [[3.5621300779392863767 (400c7f3e0de6c6ff) -9.1781279034222578161 (c0225b33949f6844)]
-          [0 (0000000000000000) 9.8451410606317875107 (4023b0b6543fd72f)]]
+	A = [[3.5621300779392863767 (400c7f3e0de6c6ff) -9.1781279034222578161 (c0225b33949f6844)]   
+          [0 (0000000000000000) 9.8451410606317875107 (4023b0b6543fd72f)]]   
 	x = [0.13113680895928436776 (3fc0c91748e41628) 0.053165565863502003974 (3fab38845d506c26)]
 	
   where the hex values inside the parentheses are the raw bits of the underlying double-precision
