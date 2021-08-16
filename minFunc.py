@@ -362,7 +362,7 @@ def minFunc(funObj,x0,options,*args):
                     old_stps = np.zeros((d.shape[0],0))
                     Hdiag = 1
                 else:
-                    old_dirs,old_stps,Hdiag = dampedUpdate(g-g_old,t*d,o.corrections,o.debug,old_dirs,old_stps,Hdiag)
+                    old_dirs,old_stps,Hdiag = dampedUpdate(g-g_old,t*d,o.corrections,dprint,old_dirs,old_stps,Hdiag)
                     if o.useMex:
                         d = lbfgs(-g,old_dirs,old_stps,Hdiag) # currently same either way
                     else:

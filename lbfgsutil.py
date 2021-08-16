@@ -87,7 +87,7 @@ def dampedUpdate(y,s,corrections,dprint,old_dirs,old_stps,Hdiag):
     k = Y.shape[1] 
     L = np.zeros((k,k)) # k*k
     for j in range(k):  # cshelton: seems like this could be w/o loops
-        for k in range(j+1,k):
+        for i in range(j+1,k):
             L[i,j] = S[:,i].T@Y[:,j] 
     D = np.diag(np.diag(S.T@Y)) # k*k
     N = np.hstack((S/Hdiag,Y)) # k*(2k)
@@ -105,6 +105,8 @@ def dampedUpdate(y,s,corrections,dprint,old_dirs,old_stps,Hdiag):
         y = theta*y + (1-theta)*Bs
 
     numCorrections = old_dirs.shape[1]
+    #print(old_dirs)
+    #print(old_stps)
     if numCorrections < corrections:
         old_dirs = np.hstack((old_dirs,s[:,None]))
         old_stps= np.hstack((old_stps,y[:,None]))
@@ -113,6 +115,9 @@ def dampedUpdate(y,s,corrections,dprint,old_dirs,old_stps,Hdiag):
         np.roll(old_stps,-1,axis=1)
         old_dirs[:,numCorrections] = s
         old_stps[:,numCorrections] = y
+    #print(old_dirs)
+    #print(old_stps)
+    #print('---')
 
     Hdiag = (y.T@s)/(y.T@y)
     return (old_dirs,old_stps,Hdiag)
@@ -149,7 +154,7 @@ def lbfgs(g,s,y,Hdiag):
         q[:,i] = q[:,i+1] - al[i]*y[:,i]
 
     # Multiply by Initial Hessian
-    r[:,1] = Hdiag*q[:,1]
+    r[:,0] = Hdiag*q[:,0]
 
     for i in range(k):
         be[i] = ro[i]*y[:,i].T@r[:,i]
