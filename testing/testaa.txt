@@ -1,0 +1,7 @@
+rosenbrock rosenbrock2
+0 0
+Method qnewton
+maxFunEvals 25
+useMex 0
+display full
+noutputs 4

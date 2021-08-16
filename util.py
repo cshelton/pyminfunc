@@ -1,8 +1,12 @@
 import numpy as np
+import scipy.linalg as la
 
 def isLegal(v):
     if not isinstance(v,np.ndarray): v = np.array(v)
     return not(np.any(np.isinf(v)) or np.any(np.isnan(v)) or np.any(np.iscomplex(v)))
+
+def trisolve2(R,x):
+    return la.solve_triangular(R,la.solve_triangular(R,x,trans=1,check_finite=False),check_finite=False)
 
 def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,doPlot,saveHessianComp,useH,funObj,*args):
 # from original Matlab code:

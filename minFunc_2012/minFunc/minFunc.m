@@ -624,10 +624,10 @@ for i = 1:maxIter
                             theta = min(max(0,((1-eta)*s'*Bs)/(s'*Bs - y'*s)),1);
                             y = theta*y + (1-theta)*Bs;
                         end
-                        R = cholupdate(cholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
+                        R = mycholupdate(mycholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
                     else
                         if y'*s > 1e-10
-                            R = cholupdate(cholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
+                            R = mycholupdate(mycholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
                         else
                             if debug
                                 fprintf('Skipping Update\n');
@@ -637,9 +637,18 @@ for i = 1:maxIter
                 elseif qnUpdate == 1 % Perform SR1 Update if it maintains positive-definiteness
 
                     Bs = R'*(R*s);
+				fprintf('Bs\n');
+				fprintf(debugstr(R));
+				fprintf('\n');
+				fprintf(debugstr(s));
+				fprintf('\n');
+				fprintf(debugstr(R*s));
+				fprintf('\n');
+				fprintf(debugstr(Bs));
+				fprintf('\n');
                     ymBs = y-Bs;
                     if abs(s'*ymBs) >= mynorm(s)*mynorm(ymBs)*1e-8 && (s-((R\(R'\y))))'*y > 1e-10
-                        R = cholupdate(R,-ymBs/sqrt(ymBs'*s),'-');
+                        R = mycholupdate(R,-ymBs/sqrt(ymBs'*s),'-');
                     else
                         if debug
                             fprintf('SR1 not positive-definite, doing BFGS Update\n');
@@ -653,10 +662,36 @@ for i = 1:maxIter
                                 theta = min(max(0,((1-eta)*s'*Bs)/(s'*Bs - y'*s)),1);
                                 y = theta*y + (1-theta)*Bs;
                             end
-                            R = cholupdate(cholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
+					   fprintf(debugstr(R));
+					  fprintf('\n');
+						fprintf(debugstr(y))
+						fprintf('\n')
+                            fprintf(debugstr(y'*s))
+					   fprintf('\n')
+                            fprintf(debugstr(sqrt(y'*s)))
+					   fprintf('\n')
+                            fprintf(debugstr(y/sqrt(y'*s)));
+					  fprintf('\n');
+
+                            R = mycholupdate(R,y/sqrt(y'*s));
+					   fprintf('AAAAA\n')
+					   fprintf(debugstr(R));
+					  fprintf('\n');
+                            fprintf(debugstr(Bs));
+					   fprintf('\n');
+                            fprintf(debugstr(s'*Bs));
+					   fprintf('\n');
+                            fprintf(debugstr(sqrt(s'*Bs)));
+					   fprintf('\n');
+                            fprintf(debugstr(Bs/sqrt(s'*Bs)));
+					   fprintf('\n');
+                            R = mycholupdate(R,Bs/sqrt(s'*Bs),'-');
+                            %R = mycholupdate(mycholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
+					   fprintf(debugstr(R));
+					  fprintf('\n');
                         else
                             if y'*s > 1e-10
-                                R = cholupdate(cholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
+                                R = mycholupdate(mycholupdate(R,y/sqrt(y'*s)),Bs/sqrt(s'*Bs),'-');
                             else
                                 if debug
                                     fprintf('Skipping Update\n');
@@ -713,6 +748,8 @@ for i = 1:maxIter
                 end
 
             end
+		  fprintf(debugstr(g));
+		  fprintf('\n');
             g_old = g;
 
         case NEWTON0 % Hessian-Free Newton

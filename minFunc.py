@@ -8,6 +8,7 @@ from collections import namedtuple
 from util import *
 from autodif import *
 from lbfgsutil import *
+from choldate import cholupdate, choldowndate
 
 class methods(IntEnum):
     SD = 0,
@@ -400,31 +401,43 @@ def minFunc(funObj,x0,options,*args):
                             H = np.eye(g.shape[0])
                     else:
                         dprint('Scaling Initial Hessian Approximation')
-                        if qnUpdate <= 1:
+                        if o.qnUpdate <= 1:
                             # Use Cholesky of Hessian approximation
                             R = np.sqrt((y.T@y)/(y.T@s))*np.eye(g.shape[0])
                         else:
                             H = np.eye(g.shape[0])*(y.T@s)/(y.T@y)
                 if o.qnUpdate == 0: # Use BFGS updates
-                    Bs = R.T@(R*s)
+                    Bs = R.T@(R@s)
                     if o.Damped:
                         eta = 0.02
                         if y.T@s < eta*s.T@Bs:
                             dprint('Damped Update')
                             theta = np.min(np.max(0,((1-eta)*s.T@Bs)/(s.T@Bs - y.T@s)),1)
                             y = theta*y + (1-theta)*Bs
-                        R = cholupdate(cholupdate(R,y/np.sqrt(y.T@s)),Bs/np.sqrt(s.T@Bs),'-')
+                        cholupdate(R,y/np.sqrt(y.T@s))
+                        choldowndate(R,Bs/np.sqrt(s.T@Bs))
                     else:
                         if y.T@s > 1e-10:
-                            R = cholupdate(cholupdate(R,y/np.sqrt(y.T@s)),Bs/np.sqrt(s.T@Bs),'-')
+                            cholupdate(R,y/np.sqrt(y.T@s))
+                            choldowndate(R,Bs/np.sqrt(s.T@Bs))
                         else:
                             dprint('Skipping Update')
                 elif o.qnUpdate == 1: # Perform SR1 Update if it maintains positive-definiteness
                     Bs = R.T@(R@s)
+                    print('Bs')
+                    print(debugstr(R))
+                    print(debugstr(s))
+                    print(debugstr(R@s))
+                    print(debugstr(Bs))
                     ymBs = y-Bs
                     if np.abs(s.T@ymBs) >= norm(s)*norm(ymBs)*1e-8 \
-                            and (s-((mldivide(R,mldivide(R.T,y))))).T@y > 1e-10:
-                        R = cholupdate(R,-ymBs/np.sqrt(ymBs.T@s),'-')
+                            and (s-trisolve2(R,y)).T@y > 1e-10:
+                        # cshelton: second arg to cholupdate in matlab
+                        # is imaginary, seems to operate the same as
+                        # if it were real (of the same magnitude)
+                        # therefore, adding abs inside np.sqrt to match
+                        # behavior
+                        choldowndate(R,-ymBs/np.sqrt(np.abs(ymBs.T@s)))
                     else:
                         dprint('SR1 not positive-definite, doing BFGS Update')
                         if o.Damped:
@@ -433,10 +446,24 @@ def minFunc(funObj,x0,options,*args):
                                 dprint('Damped Update')
                                 theta = min(max(0,((1-eta)*s.T@Bs)/(s.T@Bs - y.T@s)),1)
                                 y = theta*y + (1-theta)*Bs
-                            R = cholupdate(cholupdate(R,y/np.sqrt(y.T@s)),Bs/np.sqrt(s.T@Bs),'-')
+                            print(debugstr(R))
+                            print(debugstr(y))
+                            print(debugstr(y.T@s))
+                            print(debugstr(np.sqrt(y.T@s)))
+                            print(debugstr(y/np.sqrt(y.T@s)))
+                            cholupdate(R,y/np.sqrt(y.T@s))
+                            print('AAAAA')
+                            print(debugstr(R))
+                            print(debugstr(Bs))
+                            print(debugstr(s.T@Bs))
+                            print(debugstr(np.sqrt(s.T@Bs)))
+                            print(debugstr(Bs/np.sqrt(s.T@Bs)))
+                            choldowndate(R,Bs/np.sqrt(s.T@Bs))
+                            print(debugstr(R))
                         else:
                             if y.T@s > 1e-10:
-                                R = cholupdate(cholupdate(R,y/np.sqrt(y.T@s)),Bs/np.sqrt(s.T@Bs),'-')
+                                cholupdate(R,y/np.sqrt(y.T@s))
+                                choldowndate(R,Bs/np.sqrt(s.T@Bs))
                             else:
                                 dprint('Skipping Update')
                 elif o.qnUpdate == 2: # Use Hoshino update
@@ -452,16 +479,17 @@ def minFunc(funObj,x0,options,*args):
                     H = gamma*(H - np.outer(Hy,Hy)/yHy + np.outer(v,v)) + np.outer(s,s)/ys
                 elif o.qnUpdate == 4: # Oren's Self-Scaling Variable Metric update
                     # Oren's method
+                    sTHinvs = s.T@la.solve(H,s,assume_a='pos')
                     if (s.T@y)/(y.T@H@y) > 1:
                         phi = 1 # BFGS
                         omega = 0
-                    elif (s.T@mldivide(H,s))/(s.T@y) < 1:
+                    elif sTHinvs/(s.T@y) < 1:
                         phi = 0 # DFP
                         omega = 1
                     else:
-                        phi = (s.T@y)*(y.T@H@y - s.T@y)/((s.T@mldivide(H,s))*(y.T@H@y)-(s.T@y)**2)
+                        phi = (s.T@y)*(y.T@H@y - s.T@y)/(sTHinvs*(y.T@H@y)-(s.T@y)**2)
                         omega = phi
-                    gamma = (1-omega)*(s.T@y)/(y.T@H@y) + omega*(s.T@(mldivide(H,s)))/(s.T@y)
+                    gamma = (1-omega)*(s.T@y)/(y.T@H@y) + omega*sTHinvs/(s.T@y)
                     v = np.sqrt(y.T@H@y)*(s/(s.T@y) - (H@y)/(y.T@H@y))
                     H = gamma*(H - (np.outer(H@y,y)@H)/(y.T@H@y) + phi*np.outer(v,v)) + np.outer(s,s)/(s.T@y)
                 elif o.qnUpdate == 5:
@@ -476,10 +504,11 @@ def minFunc(funObj,x0,options,*args):
                     H = H + t1/t2 - t3/t4
 
                 if o.qnUpdate <= 1:
-                    d = -mldivide(R,mldivide(R.T,g))
+                    d = -trisolve2(R,g)
                 else:
                     d = -H@g
             g_old = g
+            print(debugstr(g))
         elif o.method==methods.NEWTON0: # Hessian-Free Newton
             cgMaxIter = min(p,o.maxFunEvals-funEvals)
             cgForce = min(0.5,np.sqrt(norm(g)))*norm(g)
@@ -540,18 +569,18 @@ def minFunc(funObj,x0,options,*args):
                     # Attempt to perform Cholesky factorization of the Hessian
                     try:
                         R = la.cholesky(H)
-                        d = -mldivide(R,mldivide(R.T,g))
+                        d = -trisolve2(R,g)
                     except la.LinAlgError:
                         # otherwise, adjust the Hessian to be positive definite base on the
                         # minimum eigenvalue, and solve with QR
                         # (expensive, we don't want to do this very much)
                         dprint('Adjusting Hessian')
                         H = H + np.eye(g.shape[0])*max(0,1e-12 - np.min(np.real(np.eigh(H)[0])))
-                        d = -mldivide(H,g)
+                        d = -la.solve(H,g,assume_a='pos')
                 elif o.HessianModify==1:
                     # Modified Incomplete Cholesky
                     R = mcholinc(H,o.debug)
-                    d = -mldivide(R,mldivide(R.T,g))
+                    d = -trisolve2(R,g)
                 elif o.HessianModify==2:
                     # Modified Generalized Cholesky
                     if o.useMex:
@@ -584,7 +613,7 @@ def minFunc(funObj,x0,options,*args):
                     # otherwise take a step with negative curvature
                     try:
                         R = la.cholesky(H)
-                        d = -mldivide(R,mldivide(R.T,g))
+                        d = -trisolve2(R,g)
                     except la.LinAlgError:
                         dprint('Taking Direction of Negative Curvature')
                         D,V = np.eigh(H)
