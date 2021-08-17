@@ -424,11 +424,6 @@ def minFunc(funObj,x0,options,*args):
                             dprint('Skipping Update')
                 elif o.qnUpdate == 1: # Perform SR1 Update if it maintains positive-definiteness
                     Bs = R.T@(R@s)
-                    print('Bs')
-                    print(debugstr(R))
-                    print(debugstr(s))
-                    print(debugstr(R@s))
-                    print(debugstr(Bs))
                     ymBs = y-Bs
                     if np.abs(s.T@ymBs) >= norm(s)*norm(ymBs)*1e-8 \
                             and (s-trisolve2(R,y)).T@y > 1e-10:
@@ -446,20 +441,8 @@ def minFunc(funObj,x0,options,*args):
                                 dprint('Damped Update')
                                 theta = min(max(0,((1-eta)*s.T@Bs)/(s.T@Bs - y.T@s)),1)
                                 y = theta*y + (1-theta)*Bs
-                            print(debugstr(R))
-                            print(debugstr(y))
-                            print(debugstr(y.T@s))
-                            print(debugstr(np.sqrt(y.T@s)))
-                            print(debugstr(y/np.sqrt(y.T@s)))
                             cholupdate(R,y/np.sqrt(y.T@s))
-                            print('AAAAA')
-                            print(debugstr(R))
-                            print(debugstr(Bs))
-                            print(debugstr(s.T@Bs))
-                            print(debugstr(np.sqrt(s.T@Bs)))
-                            print(debugstr(Bs/np.sqrt(s.T@Bs)))
                             choldowndate(R,Bs/np.sqrt(s.T@Bs))
-                            print(debugstr(R))
                         else:
                             if y.T@s > 1e-10:
                                 cholupdate(R,y/np.sqrt(y.T@s))
@@ -497,10 +480,10 @@ def minFunc(funObj,x0,options,*args):
                     phi = 0
                     psi = 1
                     omega = 0
-                    t1 = np.outer(s,(theta*s + phi*h.T@y))
+                    t1 = np.outer(s,(theta*s + phi*H.T@y))
                     t2 = (theta*s + phi*H.T@y).T@y
                     t3 = np.outer(H@y,psi*s + omega*H.T@y)
-                    t4 = (psi*s + omega*H.T@y).T*y
+                    t4 = (psi*s + omega*H.T@y).T@y
                     H = H + t1/t2 - t3/t4
 
                 if o.qnUpdate <= 1:
@@ -508,7 +491,6 @@ def minFunc(funObj,x0,options,*args):
                 else:
                     d = -H@g
             g_old = g
-            print(debugstr(g))
         elif o.method==methods.NEWTON0: # Hessian-Free Newton
             cgMaxIter = min(p,o.maxFunEvals-funEvals)
             cgForce = min(0.5,np.sqrt(norm(g)))*norm(g)
