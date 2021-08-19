@@ -604,7 +604,7 @@ def minFunc(funObj,x0,options,*args):
             else:
                 # Solve with Conjugate Gradient
                 cgMaxIter = p
-                cgForce = np.min(0.5,np.sqrt(norm(g)))*norm(g)
+                cgForce = min(0.5,np.sqrt(norm(g)))*norm(g)
                 # Select Preconditioner
                 if o.cgSolve == 1:
                     # No preconditioner
@@ -612,9 +612,9 @@ def minFunc(funObj,x0,options,*args):
                     precondArgs = None
                 elif o.cgSolve == 2:
                     # Diagonal preconditioner
-                    precDiag = np.diag(H)
+                    precDiag = np.diag(H).copy()
                     precDiag[precDiag<1e-12] = 1e-12 - np.min(precDiag)
-                    precondFunct = precondDiag
+                    precondFunc = precondDiag
                     precondArgs = (1.0/precDiag,)
                 elif o.cgSolve == 3:
                     # L-BFGS preconditioner
@@ -633,24 +633,24 @@ def minFunc(funObj,x0,options,*args):
                 elif o.cgSolve > 0:
                     # Symmetric Successive Overelaxation Preconditioner
                     omega = o.cgSolve
-                    D = np.diag(H)
+                    D = np.diag(H).copy()
                     D[D<1e-12] = 1e-12 - np.min(D)
                     precDiag = (omega/(2-omega))/D
                     precTriu = np.diag(D/omega) + np.triu(H,1)
                     precondFunc = precondTriuDiag
-                    precondArgs = (preTriu,1.0/precDiag)
+                    precondArgs = (precTriu,1.0/precDiag)
                 else:
                     # Incomplete Cholesky Preconditioner
-                    R = ichol(H,droptol=-o.cgSolve,rdiag=1)
-                    if np.min(np.diag(R)) < 1e-12:
-                        R = ichol(H+np.eye(1e-12 - np.min(np.diag(R))),droptol=-o.cgSolve,rdiag=1)
+                    R = ichol(H,o.cgSolve)
+                    if np.min(R.factors()[0].diagonal()) < 1e-12:
+                        R = ichol(H+np.eye(1e-12 - np.min(np.diag(R))),-o.cgSolve)
                     precondFunc = precondTriu
                     precondArgs = (R,)
 
                 # Run cg with the appropriate preconditioner
                 if o.HvFunc is None:
                     # No user-supplied Hessian-vector function
-                    d,cgIter,cgRes = confGrad(H,-g,cgForce,cgMaxIter,o.debug,precondFunc,precondArgs)
+                    d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,o.debug,precondFunc,precondArgs)
                 else:
                     # Use user-supplied Hessian-vector function
                     d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,o.deubg,precondFunc,precondArgs,o.HvFunc,(x,*args))
@@ -667,7 +667,7 @@ def minFunc(funObj,x0,options,*args):
             if np.any(np.abs(d) > 1e5) or np.all(np.abs(d) < 1e-5) or g.T@d > -o.progTol:
                 dprint('Using 2nd-Order Step')
                 D,V = np.eigh((H+H.T)/2.)
-                D = np.max(np.abs(D),np.max(np.max(np.abs(D)),1)*1e-12)
+                D = max(np.abs(D),np.max(np.max(np.abs(D)),1)*1e-12)
                 d = -V@((V.T@g)/D)
             else:
                 dprint('Using 3rd-Order Step')

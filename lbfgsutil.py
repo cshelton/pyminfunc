@@ -70,11 +70,14 @@ def lbfgsUpdate(y,s,corrections,dprint,old_dirs,old_stps,Hdiag):
     ys = y.T@s
     if ys > 1e-10:
         numCorrections = old_dirs.shape[1]
-        if numCorrections >= corrections:
+        if numCorrections < corrections:
+            old_dirs = np.hstack((old_dirs,s[:,None]))
+            old_stps= np.hstack((old_stps,y[:,None]))
+        else:
             np.roll(old_dirs,-1,axis=1)
             np.roll(old_stps,-1,axis=1)
-        old_dirs[:,numCorrections] = s
-        old_stps[:,numCorrections] = y
+            old_dirs[:,numCorrections] = s
+            old_stps[:,numCorrections] = y
         
         Hdiag = ys/(y.T@y)
     else:

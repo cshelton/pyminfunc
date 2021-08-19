@@ -1,6 +1,6 @@
 # Testing code
 
-## Notes:
+### Reproducibility
 
 The goal of testing is to assure that the algorithms implemented in python are
 the same as those implemented in Matlab (including all options).  The exact answers
@@ -43,3 +43,8 @@ A few notes on that attempt:
   
 
 Again, this is not to say that floating point arthmetic is not exact (I think most know that)!  This is to say that it is not reproducible across systems, because of the looseness of the IEEE standard, which only guarentees very simple operations be bit-level identical.  This is known among many, but not all.
+
+### Tests that fail
+
+- Test 03c fails because it depends on random choices and I cannot get the randomness to be the same between python and matlab easily
+- Test 11f fails because no matter which sparse Cholesky decomp I pick in Python, the sparsity (for a given level) is chosen differently than in Matlab.  

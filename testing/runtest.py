@@ -21,7 +21,7 @@ def checkoutput(out1,out2):
                 try:
                     f1 = float(w1)
                     f2 = float(w2)
-                    rdiff = abs(f1-f2)/max(abs(f1),abs(f2))
+                    rdiff = abs(f1-f2)/max(abs(f1),abs(f2),1e-6)
                     numdiff = max(numdiff,rdiff)
                 except ValueError:
                     if w1 != w2:
@@ -41,9 +41,9 @@ for testfn in sys.argv[1:]:
         else:
             print(testfn,f'PASS (@ {lvl:.5g})')
     else:
-        with open(testfn+'.pyout','w') as pyoutf:
-            pyoutf.write(pyout)
-        with open(testfn+'.mlout','w') as mloutf:
-            mloutf.write(mlout)
         print(testfn,'FAIL')
+    with open(testfn+'.pyout','w') as pyoutf:
+        pyoutf.write(pyout)
+    with open(testfn+'.mlout','w') as mloutf:
+        mloutf.write(mlout)
 

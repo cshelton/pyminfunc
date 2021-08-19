@@ -1,5 +1,9 @@
 import numpy as np
 import scipy.linalg as la
+from scipy.sparse import csc_matrix
+from scipy.sparse.linalg import spilu
+import scipy.sparse.linalg as sla
+import ilupp
 
 def isLegal(v):
     if not isinstance(v,np.ndarray): v = np.array(v)
@@ -7,6 +11,29 @@ def isLegal(v):
 
 def trisolve2(R,x):
     return la.solve_triangular(R,la.solve_triangular(R,x,trans=1,check_finite=False),check_finite=False)
+
+def precondTriu(r,L):
+    #return sla.spsolve_triangular(L.T,sla.spsolve_triangular(L,r,lower=False),lower=False)
+    return L(r)
+
+def precondDiag(r,D):
+    return D*r
+
+def precondTriuDiag(r,U,D):
+    return la.solve_triangular(U,D*la.solve_triangular(U,r,trans=1,check_finite=False),check_finite=False)
+
+def ichol(H,droptol,rule=None):
+    ## a real hack to get a Cholesky from an LU
+    #if rule is None:
+    #    U = spilu(csc_matrix(H),drop_tol=droptol).U.todense()
+    #else:
+    #    U = spilu(csc_matrix(H),drop_tol=droptol,drop_rule=rule).U.todense()
+    #print(U)
+    #D = np.diag(np.sqrt(np.abs(np.diag(U))))
+    #R = la.solve_triangular(D,U)
+    #return R
+    #return ilupp.icholt(csc_matrix(H),H.shape[0],droptol)
+    return ilupp.ICholTPreconditioner(csc_matrix(H),H.shape[0],droptol)
 
 def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,doPlot,saveHessianComp,useH,funObj,*args):
 # from original Matlab code:
@@ -167,7 +194,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
         if not saveHessianComp and useH:
             (f_new,g_new,H) = funObj(x+t*d,*args)
         else:
-            (f_new,g_new) = funObj(x+t*d,*args)
+            (f_new,g_new) = funObj(x+t*d,*args)[0:2]
         funEvals += 1
         gtd_new = g_new.T@d
         LSiter += 1

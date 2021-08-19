@@ -1,0 +1,8 @@
+rosenbrock rosenbrock3
+0 0
+Method newton
+cgSolve 2
+maxFunEvals 25
+useMex 0
+display full
+noutputs 4

@@ -905,10 +905,15 @@ for i = 1:maxIter
                 else
                     % Incomplete Cholesky Preconditioner
                     opts.droptol = -cgSolve;
-                    opts.rdiag = 1;
-                    R = cholinc(sparse(H),opts);
+                    %opts.rdiag = 1;
+                    opts.type = 'ict';
+				opts.shape = 'upper';
+                    % R = cholinc(sparse(H),opts);
+				% cshelton: below is >2014 Matlab replacement
+				R = ichol(sparse(H),opts);
                     if min(diag(R)) < 1e-12
-                        R = cholinc(sparse(H + eye*(1e-12 - min(diag(R)))),opts);
+                        %R = cholinc(sparse(H + eye*(1e-12 - min(diag(R)))),opts);
+                        R = ichol(sparse(H + eye*(1e-12 - min(diag(R)))),opts);
                     end
                     precondFunc = @precondTriu;
                     precondArgs = {R};
