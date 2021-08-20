@@ -4,6 +4,7 @@ from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 import scipy.sparse.linalg as sla
 import ilupp
+from debug import *
 
 def isLegal(v):
     if not isinstance(v,np.ndarray): v = np.array(v)
@@ -66,9 +67,9 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
 
     # Evaluate the Objective and Gradient at the Initial Step
     if useH:
-        (f_new,g_new,H) = funObj(x+t*d,*args)
+        (f_new,g_new,H) = funObj(x+t*d,*args)[0:3]
     else:
-        (f_new,g_new) = funObj(x+t*d,*args)
+        (f_new,g_new) = funObj(x+t*d,*args)[0:2]
     funEvals = 1
     gtd_new = g_new.T@d
 
@@ -88,11 +89,11 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
             t = (t+t_prev)/2
             # Do Armijo
             if useH:
-                (t,x_new,f_new,g_new,armijoFunEvals,H) = ArmijoBacktrack(x,t,d,f,f,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot,saveHassianComp,True,*args)
+                (t,x_new,f_new,g_new,armijoFunEvals,H) = ArmijoBacktrack(x,t,d,f,f,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot,saveHessianComp,True,funObj,*args)
                 funEvals = funEvals + armijoFunEvals
                 return (t,f_new,g_new,funEvals,H)
             else:
-                (t,x_new,f_new,g_new,armijoFunEvals) = ArmijoBacktrack(x,t,d,f,f,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot,saveHassianComp,False,*args)
+                (t,x_new,f_new,g_new,armijoFunEvals) = ArmijoBacktrack(x,t,d,f,f,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot,saveHessianComp,False,funObj,*args)
                 funEvals = funEvals + armijoFunEvals
                 return (t,f_new,g_new,funEvals)
 
@@ -130,9 +131,9 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
         g_prev = g_new
         gtd_prev = gtd_new
         if not saveHessianComp and useH:
-            (f_new,g_new,H) = funObj(x+t*d,*args)
+            (f_new,g_new,H) = funObj(x+t*d,*args)[0:3]
         else:
-            (f_new,g_new) = funObj(x+t*d,*args)
+            (f_new,g_new) = funObj(x+t*d,*args)[0:2]
         funEvals += 1
         gtd_new = g_new.T@d
         LSiter += 1
@@ -170,7 +171,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
                 oldLOval = bracket[nonTpos]
                 oldLOFval = bracketFval[nonTpos]
                 oldLOGval = bracketGval[nonTpos]
-            t = mixedInterp(bracket,bracketFval,bracketGval,d,Tops,oldLOval,oldLOFval,oldLOGval,dprint,doPlot)
+            t = mixedInterp(bracket,bracketFval,bracketGval,d,Tpos,oldLOval,oldLOFval,oldLOGval,dprint,doPlot)
 
         # Test that we are making sufficient progress
         maxbrac = max(bracket)
@@ -192,7 +193,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
 
         # Evaluate new point
         if not saveHessianComp and useH:
-            (f_new,g_new,H) = funObj(x+t*d,*args)
+            (f_new,g_new,H) = funObj(x+t*d,*args)[0:3]
         else:
             (f_new,g_new) = funObj(x+t*d,*args)[0:2]
         funEvals += 1
@@ -219,8 +220,8 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
                     dprint('LO Pos is being removed!')
                     LOposRemoved = 1
                     oldLOval = bracket[LOpos]
-                    oldFLOval = bracketFval[LOpos]
-                    oldGLOval = bracketGval[LOpos]
+                    oldLOFval = bracketFval[LOpos]
+                    oldLOGval = bracketGval[LOpos]
             bracket[LOpos] = t
             bracketFval[LOpos] = f_new
             bracketGval[LOpos] = g_new
@@ -241,7 +242,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
 
     # Evaluate Hessian at new point
     if useH and funEvals > 1 and saveHessianComp:
-        (f_new,g_new,H) = funObj(x+t*d,*args)
+        (f_new,g_new,H) = funObj(x+t*d,*args)[0:3]
         funEvals += 1
 
     if useH:
@@ -324,7 +325,7 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
 # (sqrt(-1) replaced with None)
 
     nPoints = len(x)
-    order = nPoints*2 - 1 - f.count(None)+f.count(None)
+    order = nPoints*2 - 1 - (f.count(None)+g.count(None))
     xmin = min(x)
     xmax = max(x)
 
@@ -353,30 +354,30 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
     # Constraints Based on available Function Values
     A = np.zeros((0,order+1))
     b = np.zeros(0)
-    for i in nPoints:
+    for i in range(nPoints):
         if f[i] is not None:
             constraint = np.zeros((1,order+1))
-            for j in range(order-1,-1,-1):
+            for j in range(order,-1,-1):
                 constraint[0,order-j] = x[i]**j
             A = np.concatenate((A,constraint))
-            b = np.concatenate((b,np.array(f[i])))
+            b = np.concatenate((b,np.array([f[i]])))
 
     # Constraints based on available Derivatives
-    for i in nPoints:
+    for i in range(nPoints):
         if g[i] is not None:
             constraint = np.zeros((1,order+1))
             for j in range(order):
                 constraint[0,j] = (order-j)*x[i]**(order-j-1)
             A = np.concatenate((A,constraint))
-            b = np.concatenate((b,np.array(g[i])))
+            b = np.concatenate((b,np.array([g[i]])))
 
     # Find interpolating polynomial
     params = np.linalg.solve(A,b)
 
     # Compute Critical Points
     dParams = np.zeros(order)
-    for i in range(params-1):
-        dParams[i] = params[i]*(order-i)
+    for i,p in enumerate(params[:-1]):
+        dParams[i] = p*(order-i)
 
     if np.any(np.isinf(dParams)):
         cp = np.concatenate((np.array([xminBound,xmaxBound],x)))
@@ -446,9 +447,9 @@ def ArmijoBacktrack(x,t,d,f,fr,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot
 
     # Evaluate the Objective and Gradient at the Initial Step
     if useH:
-        (f_new,g_new,H) = funObj(x+t*d,*args)
+        (f_new,g_new,H) = funObj(x+t*d,*args)[0:3]
     else:
-        (f_new,g_new) = funObj(x+t*d,*args)
+        (f_new,g_new) = funObj(x+t*d,*args)[0:2]
     funEvals = 1
 
     while f_new > fr + c1*t*gtd or not isLegal(f_new):
@@ -499,9 +500,9 @@ def ArmijoBacktrack(x,t,d,f,fr,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot
             if LS_interp == 2: g_prev = g_new
 
         if not saveHessianComp and useH:
-            (f_new,g_new,H) = funObj(x+t*d,*args)
+            (f_new,g_new,H) = funObj(x+t*d,*args)[0:3]
         else:
-            (f_new,g_new) = funObj(x+t*d,*args)
+            (f_new,g_new) = funObj(x+t*d,*args)[0:2]
         funEvals += 1
 
         # Check whether step size has become too small
@@ -514,7 +515,7 @@ def ArmijoBacktrack(x,t,d,f,fr,g,gtd,c1,LS_interp,LS_multi,progTol,dprint,doPlot
 
     # Evaluate Hessian at new point
     if useH and funEvals>1 and saveHessianComp:
-        (f_new,g_new,H) = funObj(x+t*d,*args)
+        (f_new,g_new,H) = funObj(x+t*d,*args)[0:3]
         funEvals += 1
 
     x_new = x+t*d
@@ -595,3 +596,26 @@ def conjGrad(A,b,optTol,maxIter,dprint,precFunc=None,precArgs=None,matrixVectFun
         return (x,k,res,None)
     else:
         return (x,k,res)
+
+def taylorModel(d,f,g,H,T):
+    p = d.shape[0]
+    f = f.copy()
+    g = g.copy()
+    H = H.copy()
+    fd3 = 0.
+    gd2 = np.zeros(p)
+    Hd = np.zeros((p,p))
+    # cshelton: to replace with broadcasting code (currently dups Matlab code)
+    for t1 in range(p):
+        for t2 in range(p):
+            for t3 in range(p):
+                fd3 += T[t1,t2,t3]*d[t1]*d[t2]*d[t3]
+                gd2[t3] += T[t1,t2,t3]*d[t1]*d[t2]
+                Hd[t2,t3] += T[t1,t2,t3]*d[t1]
+    f += g.T@d + 0.5*d.T@H@d + 1./6*fd3
+    g += H@d + 0.5*gd2
+    H += Hd
+    if np.any(np.abs(d) > 1e5):
+        # We want the optimizer to stop if the solution is unbounded
+        g = np.zeros(p)
+    return (f,g,H)

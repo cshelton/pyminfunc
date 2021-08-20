@@ -27,11 +27,17 @@ function str = debugstr(x)
 		str = [str ']'];
 	else
 		str = '[';
+		inds = {1};
+		sz = size(x);
+		for d = 2:length(sz)
+			inds = {inds{:}, 1:sz(d)};
+		end
 		for i = 1:m
 			if i>1
 				str = [str '\n'];
 			end
-			str = [str debugstr(x(i,:))];
+			inds{1} = i;
+			str = [str debugstr(shiftdim(x(inds{:}),1))];
 		end
 		str = [str ']'];
 	end

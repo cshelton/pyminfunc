@@ -1,4 +1,4 @@
-function [f, df, ddf] = rosenbrock(x);
+function [f, df, ddf, dddf] = rosenbrock(x);
 
 % rosenbrock.m This function returns the function value, partial derivatives
 % and Hessian of the (general dimension) rosenbrock function, given by:
@@ -26,4 +26,14 @@ if nargout > 2
   ddf(1:D-1,1:D-1) = diag(-400*x(2:D) + 1200*x(1:D-1).^2 + 2);
   ddf(2:D,2:D) = ddf(2:D,2:D) + 200*eye(D-1);
   ddf = ddf - diag(400*x(1:D-1),1) - diag(400*x(1:D-1),-1);
+end
+
+if nargout > 3
+	dddf = zeros(D*D*D,1);
+	del = D*D+D+1;
+	dddf(1:del:end-1) = 2400*x(1:D-1);
+	dddf(2:del:end) = -400;
+	dddf((1+D):del:end) = -400;
+	dddf((1+D*D):del:end) = -400;
+	dddf = reshape(dddf,D,D,D);
 end

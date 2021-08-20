@@ -1,0 +1,9 @@
+rosenbrock rosenbrock2
+0 0
+Method cg
+LS_init 3
+LS_type 0
+maxFunEvals 25
+useMex 0
+display full
+noutputs 4

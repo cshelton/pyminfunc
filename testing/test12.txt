@@ -1,0 +1,7 @@
+rosenbrock rosenbrock4
+0 0
+Method tensor
+maxFunEvals 25
+useMex 0
+display full
+noutputs 4

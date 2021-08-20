@@ -194,10 +194,10 @@ def minFunc(funObj,x0,options,*args):
             funEvalMultipler = p+1
 
     if o.method < methods.NEWTON:
-        f,g = funObj(x,*args)
+        f,g = funObj(x,*args)[0:2]
         computeHessian = 0
     else:
-        f,g,H = funObj(x,*args)
+        f,g,H = funObj(x,*args)[0:3]
         computeHessian = 1
     funEvals = 1
 
@@ -557,7 +557,7 @@ def minFunc(funObj,x0,options,*args):
                         # minimum eigenvalue, and solve with QR
                         # (expensive, we don't want to do this very much)
                         dprint('Adjusting Hessian')
-                        H = H + np.eye(g.shape[0])*max(0,1e-12 - np.min(np.real(np.eigh(H)[0])))
+                        H = H + np.eye(g.shape[0])*max(0,1e-12 - np.min(np.real(la.eigh(H)[0])))
                         d = -la.solve(H,g,assume_a='pos')
                 elif o.HessianModify==1:
                     # Modified Incomplete Cholesky
@@ -660,14 +660,14 @@ def minFunc(funObj,x0,options,*args):
                 T = autoTensor(x,numDiffType,funObj,*args)[3]
             else:
                 T = funObj(x,*args)[3]
-            d = minFunc(taylorModel,np.zeros((p,1)),
+            d = minFunc(taylorModel,np.zeros(p),
                     {'Method':'newton','Display':'none','progTol':o.progTol,'optTol':o.optTol},
-                    f,g,H,T)
+                    f,g,H,T)[0]
 
             if np.any(np.abs(d) > 1e5) or np.all(np.abs(d) < 1e-5) or g.T@d > -o.progTol:
                 dprint('Using 2nd-Order Step')
-                D,V = np.eigh((H+H.T)/2.)
-                D = max(np.abs(D),np.max(np.max(np.abs(D)),1)*1e-12)
+                D,V = la.eigh((H+H.T)/2.)
+                D = np.maximum(np.abs(D),np.maximum(np.max(np.abs(D)),1)*1e-12)
                 d = -V@((V.T@g)/D)
             else:
                 dprint('Using 3rd-Order Step')
