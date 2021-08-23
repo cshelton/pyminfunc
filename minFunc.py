@@ -104,6 +104,8 @@ class minFuncoptions:
                     )
 
     def __init__(self,options):
+        if options is None:
+            options = {}
         uopt = {k.upper():v for k,v in options.items()} 
         self.verbose = self.getoptbool(uopt,'DISPLAY',(0,'OFF','NONE'),0,1)
         self.verboseI = self.getoptbool(uopt,'DISPLAY',(0,'OFF','NONE','FINAL'),0,1)
@@ -144,7 +146,7 @@ class outputT:
 #    python does not pass this information along like Matlab does
 #  - useMex currently does nothing, but is passed around.  In the future, we could
 #     add precompiled C code as an option in a similar fashion
-def minFunc(funObj,x0,options,*args):
+def minFunc(funObj,x0,options=None,*args):
     o = minFuncoptions(options)
     p = x0.shape[0]
     d = np.zeros((p,))
