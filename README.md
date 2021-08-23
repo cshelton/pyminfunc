@@ -16,7 +16,9 @@ in minFunc, but just to provide their equivalences in python.
 
 ## Required Packages
 
-The code requires `numpy` and `scipy`.  Additionally, if running Newton's
+The code requires `numpy` and `scipy`.
+
+Additionally, if running Newton's
 method with cgSolve<0, it requires `ilupp` (for an incomplete Cholesky
 decomposition).  And, if using Quasi-Newton, it requires `choldate`
 (for Cholesky updating and downdating).  If you cannot get these packages and 
