@@ -1,0 +1,8 @@
+colville colville2
+0.5 1.0 -0.5 -1.0
+Method qnewton
+maxFunEvals 25
+initialHessType 0
+useMex 0
+display full
+noutputs 4

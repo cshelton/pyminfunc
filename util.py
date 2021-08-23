@@ -119,7 +119,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
         minStep = t + 0.01*(t-temp)
         maxStep = t*10
         if LS_interp <= 1:
-            dprint('Extending Bracket')
+            dprint('Extending Braket') # misspelled to match original
             t = maxStep
         elif LS_interp == 2:
             dprint('Cubic Extrapolation')

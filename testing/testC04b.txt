@@ -1,0 +1,8 @@
+colville colville2
+0.5 1.0 -0.5 -1.0
+Method newton0
+maxFunEvals 25
+cgSolve 1
+useMex 0
+display full
+noutputs 4

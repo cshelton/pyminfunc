@@ -1,0 +1,9 @@
+colville colville3
+0.5 1.0 -0.5 -1.0
+Method newton
+LS_init 1
+LS_type 0
+maxFunEvals 25
+useMex 0
+display full
+noutputs 4

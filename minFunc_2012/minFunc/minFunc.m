@@ -809,11 +809,6 @@ for i = 1:maxIter
                         end
                         H = H + eye(length(g)) * max(0,1e-12 - min(real(eig(H))));
                         d = -H\g;
-				    [Q,R] = qr(H);
-				    fprintf([debugstr(H) '\n']);
-				    fprintf([debugstr(Q) '\n']);
-				    fprintf([debugstr(R) '\n']);
-				    fprintf([debugstr(d) '\n']);
                     end
                 elseif HessianModify == 1
                     % Modified Incomplete Cholesky
@@ -917,10 +912,13 @@ for i = 1:maxIter
 				opts.shape = 'upper';
                     % R = cholinc(sparse(H),opts);
 				% cshelton: below is >2014 Matlab replacement
+				H
 				R = ichol(sparse(H),opts);
                     if min(diag(R)) < 1e-12
                         %R = cholinc(sparse(H + eye*(1e-12 - min(diag(R)))),opts);
+                        (H + eye*(1e-12 - min(diag(R))))
                         R = ichol(sparse(H + eye*(1e-12 - min(diag(R)))),opts);
+
                     end
                     precondFunc = @precondTriu;
                     precondArgs = {R};

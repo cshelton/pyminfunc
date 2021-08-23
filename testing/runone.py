@@ -2,7 +2,7 @@ import sys
 sys.path.insert(0,'../')
 from minFunc import minFunc
 import numpy as np
-from rosen import *
+from testfns import *
 
 def runone(filename):
     with open(filename) as fid:

@@ -7,9 +7,8 @@ def runmatlab(testfile):
 
     output = subprocess.check_output(['matlab','-nodesktop','-nojvm','-nosplash','-r','try, runone(\''+testfile+'\'); end; quit']).decode('utf-8')
 
-
-
     ret = ''
+    foundstart = False
     for l in output.split('\n'):
         if foundstart:
             if l == '===END HERE':

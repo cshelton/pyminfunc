@@ -1,0 +1,9 @@
+colville colville2
+0.5 1.0 -0.5 -1.0
+Method cg
+LS_init 2
+LS_type 1
+maxFunEvals 25
+useMex 0
+display full
+noutputs 4

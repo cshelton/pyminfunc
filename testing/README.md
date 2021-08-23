@@ -54,7 +54,7 @@ Again, this is not to say that floating point arthmetic is not exact (I think mo
 ### Tests that fail (as of Aug 23, 2021)
 
 Failures that are "okay" (seem to be due to slight variations in numeric processing, not because algorithm is incorrect or more unstable than Matlab version):
-- Tests A03c and B03c fail because it depends on random choices and I cannot get the randomness to be the same between python and matlab easily
+- Tests A03c, B03c, C03c fail because they depends on random choices and I cannot get the randomness to be the same between python and matlab easily
 - Test B10e fails, seemingly because of small (one-bit) differences in inner products early that propagate.
 - Test B11f also fails (with a more dramatic deviation) due to small bit changes early.  In this case, Hessian and grad slight differences cause algorithm to choose different path.
 - Test B12 similarly fails
@@ -65,4 +65,4 @@ Failures that ideally would be fixed:
 
 Failures that are due to bugs:
 
-none currently know (although there probably are some)
+none currently known (although there probably are some)

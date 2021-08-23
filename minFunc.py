@@ -218,7 +218,7 @@ def minFunc(funObj,x0,options,*args):
     optCond = np.max(np.abs(g))
 
     if o.noutputs>3:
-        trace = traceT(f,funEvals,optCond)
+        trace = traceT([f],[funEvals],[optCond])
 
     if optCond <= o.optTol:
         exitflag = 1
@@ -564,11 +564,6 @@ def minFunc(funObj,x0,options,*args):
                         #d = -la.solve(H,g,assume_a='pos')
                         (Q,R) = la.qr(H)
                         d = -la.solve_triangular(R,Q.T@g)
-                        d = -la.pinv(H)@g
-                        print(debugstr(H))
-                        print(debugstr(Q))
-                        print(debugstr(R))
-                        print(debugstr(d))
                 elif o.HessianModify==1:
                     # Modified Incomplete Cholesky
                     R = mcholinc(H,o.debug)
