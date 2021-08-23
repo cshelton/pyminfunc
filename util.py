@@ -8,7 +8,6 @@ import scipy.linalg as la
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 import scipy.sparse.linalg as sla
-import ilupp
 from debug import *
 
 def isLegal(v):
@@ -29,6 +28,7 @@ def precondTriuDiag(r,U,D):
     return la.solve_triangular(U,D*la.solve_triangular(U,r,trans=1,check_finite=False),check_finite=False)
 
 def ichol(H,droptol,rule=None):
+    import ilupp
     ## a real hack to get a Cholesky from an LU
     #if rule is None:
     #    U = spilu(csc_matrix(H),drop_tol=droptol).U.todense()

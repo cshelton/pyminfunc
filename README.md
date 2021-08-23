@@ -14,6 +14,12 @@ This code is intended to be a reimplementation of Mark Schmidt's `minFunc`
 in python using numpy and scipy.  The goal is not to change the algorithms
 in minFunc, but just to provide their equivalences in python.
 
+## Required Packages
+
+The code requires `numpy` and `scipy`.  Additionally, if running Newton's 
+method with cgSolve<0, it requires `ilupp` (for an incomplete Cholesky
+decomposition).
+
 ## Status
 
 The code has been tested for most of the paths through the algorithms on a handful of optimization problems (none very large).  It does *not* reproduce the results exactly (down to the last floating-point bit), mainly because 1) operations like Cholesky decompositions are performed differently in scipy and Matlab, and
