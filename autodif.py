@@ -1,3 +1,8 @@
+# Version 0.9
+# Aug 21, 2021
+# by Christian Shelton
+# based on code by Mark Schmidt
+
 import numpy as np
 from debug import *
 
