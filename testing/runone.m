@@ -1,4 +1,8 @@
-function runone(filename)
+function runone(filename,andquit)
+
+if nargin<2
+	andquit=1
+end
 
 addpath('../minFunc_2012');
 addpath('../minFunc_2012/autoDif');
@@ -55,9 +59,9 @@ else
 	nout = 4;
 end
 
-fprintf('x [');
+fprintf('x [ ');
 fprintf('%.10g ',x(1:end-1));
-fprintf('%.10g]\n',x(end));
+fprintf('%.10g ]\n',x(end));
 if nout>1
 	fprintf('f %.10g\n',f);
 end
@@ -81,7 +85,9 @@ if nout>3
 	fprintf('\n');
 end
 fprintf('===END HERE\n');
-exit(0);
+if andquit==1
+	exit(0);
+end
 
 
 

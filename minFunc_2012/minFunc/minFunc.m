@@ -679,6 +679,8 @@ for i = 1:maxIter
                 elseif qnUpdate == 4 % Oren's Self-Scaling Variable Metric update
 
                     % Oren's method
+				HR = chol(H);
+
                     if (s'*y)/(y'*H*y) > 1
                         phi = 1; % BFGS
                         omega = 0;
@@ -807,6 +809,11 @@ for i = 1:maxIter
                         end
                         H = H + eye(length(g)) * max(0,1e-12 - min(real(eig(H))));
                         d = -H\g;
+				    [Q,R] = qr(H);
+				    fprintf([debugstr(H) '\n']);
+				    fprintf([debugstr(Q) '\n']);
+				    fprintf([debugstr(R) '\n']);
+				    fprintf([debugstr(d) '\n']);
                     end
                 elseif HessianModify == 1
                     % Modified Incomplete Cholesky
@@ -943,7 +950,7 @@ for i = 1:maxIter
                 [junk1 junk2 junk3 T] = funObj(x,varargin{:});
             end
             options_sub.Method = 'newton';
-            options_sub.Display = 'none';
+            options_sub.Display = 'full';
             options_sub.progTol = progTol;
             options_sub.optTol = optTol;
             d = minFunc(@taylorModel,zeros(p,1),options_sub,f,g,H,T);

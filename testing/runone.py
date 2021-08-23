@@ -54,7 +54,7 @@ def runone(filename):
     elif options['noutputs'] == 4:
         x,f,exitflag,output = eval('minFunc('+funname+',x0,options)')
 
-    print('x ['+' '.join(['{:.10g}'.format(v) for v in x])+']')
+    print('x [ '+' '.join(['{:.10g}'.format(v) for v in x])+' ]')
     if f is not None: print(f'f {f:.10g}')
     if exitflag is not None: print('exitflag',exitflag)
     if output is not None:

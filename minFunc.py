@@ -462,7 +462,9 @@ def minFunc(funObj,x0,options,*args):
                     H = gamma*(H - np.outer(Hy,Hy)/yHy + np.outer(v,v)) + np.outer(s,s)/ys
                 elif o.qnUpdate == 4: # Oren's Self-Scaling Variable Metric update
                     # Oren's method
-                    sTHinvs = s.T@la.solve(H,s,assume_a='pos')
+                    HR = la.cholesky(H)
+                    sTHinvs = s.T@trisolve2(HR,s)
+                    #sTHinvs = s.T@la.solve(H,s,assume_a='pos')
                     if (s.T@y)/(y.T@H@y) > 1:
                         phi = 1 # BFGS
                         omega = 0
@@ -558,7 +560,15 @@ def minFunc(funObj,x0,options,*args):
                         # (expensive, we don't want to do this very much)
                         dprint('Adjusting Hessian')
                         H = H + np.eye(g.shape[0])*max(0,1e-12 - np.min(np.real(la.eigh(H)[0])))
-                        d = -la.solve(H,g,assume_a='pos')
+
+                        #d = -la.solve(H,g,assume_a='pos')
+                        (Q,R) = la.qr(H)
+                        d = -la.solve_triangular(R,Q.T@g)
+                        d = -la.pinv(H)@g
+                        print(debugstr(H))
+                        print(debugstr(Q))
+                        print(debugstr(R))
+                        print(debugstr(d))
                 elif o.HessianModify==1:
                     # Modified Incomplete Cholesky
                     R = mcholinc(H,o.debug)
@@ -650,10 +660,10 @@ def minFunc(funObj,x0,options,*args):
                 # Run cg with the appropriate preconditioner
                 if o.HvFunc is None:
                     # No user-supplied Hessian-vector function
-                    d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,o.debug,precondFunc,precondArgs)
+                    d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,dprint,precondFunc,precondArgs)
                 else:
                     # Use user-supplied Hessian-vector function
-                    d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,o.deubg,precondFunc,precondArgs,o.HvFunc,(x,*args))
+                    d,cgIter,cgRes = conjGrad(H,-g,cgForce,cgMaxIter,dprint,precondFunc,precondArgs,o.HvFunc,(x,*args))
                 dprint(f'CG stopped after {cgIter} iterations w/ residual {cgRes:.5e}')
         elif o.method == methods.TENSOR:
             if o.numDiff:
@@ -661,7 +671,7 @@ def minFunc(funObj,x0,options,*args):
             else:
                 T = funObj(x,*args)[3]
             d = minFunc(taylorModel,np.zeros(p),
-                    {'Method':'newton','Display':'none','progTol':o.progTol,'optTol':o.optTol},
+                    {'Method':'newton','Display':'full','progTol':o.progTol,'optTol':o.optTol},
                     f,g,H,T)[0]
 
             if np.any(np.abs(d) > 1e5) or np.all(np.abs(d) < 1e-5) or g.T@d > -o.progTol:
@@ -733,12 +743,12 @@ def minFunc(funObj,x0,options,*args):
             fr = f
         else:
             if i == 1:
-                old_fvals = np.full((o.Fref,1),-np.inf)
+                old_fvals = np.full((o.Fref,),-np.inf)
 
             if i <= o.Fref:
                 old_fvals[i-1] = f
             else:
-                old_fvals = np.concatenate((old_fvals[0:-1],np.array(f)))
+                old_fvals = np.concatenate((old_fvals[1:],np.array([f])))
             fr = np.max(old_fvals)
 
         computeHessian = 0

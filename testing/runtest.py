@@ -1,6 +1,8 @@
 #!/usr/bin/python
 import sys
 import subprocess
+from runpython import runpython
+from runmatlab import runmatlab, runmatlabcont
 
 def checkoutput(out1,out2):
     if out1==out2:
@@ -9,7 +11,7 @@ def checkoutput(out1,out2):
     ls1 = out1.split('\n')
     ls2 = out2.split('\n')
     if len(ls1) != len(ls2):
-        return (False,None)
+        return (False,"diff # of lines")
     numdiff = 0
     for l1,l2 in zip(ls1,ls2):
         if l1 != l2:
@@ -25,14 +27,18 @@ def checkoutput(out1,out2):
                     numdiff = max(numdiff,rdiff)
                 except ValueError:
                     if w1 != w2:
-                        return (False,None)
+                        return (False,w1+" "+w2)
     return (True,numdiff)
 
 
+mlproc = None
+
 for testfn in sys.argv[1:]:
 
-    pyout = subprocess.check_output(['./runpython.py',testfn]).decode('utf-8')
-    mlout = subprocess.check_output(['./runmatlab.py',testfn]).decode('utf-8')
+    #pyout = subprocess.check_output(['./runpython.py',testfn]).decode('utf-8')
+    #mlout = subprocess.check_output(['./runmatlab.py',testfn]).decode('utf-8')
+    pyout = runpython(testfn)
+    mlout,mlproc = runmatlabcont(testfn,mlproc)
 
     success,lvl = checkoutput(pyout,mlout)
     if success:
@@ -41,7 +47,7 @@ for testfn in sys.argv[1:]:
         else:
             print(testfn,f'PASS (@ {lvl:.5g})')
     else:
-        print(testfn,'FAIL')
+        print(testfn,f'FAIL ({lvl})')
     with open(testfn+'.pyout','w') as pyoutf:
         pyoutf.write(pyout)
     with open(testfn+'.mlout','w') as mloutf:

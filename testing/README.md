@@ -37,6 +37,13 @@ A few notes on that attempt:
 
   Matlab's norm versus Pythons numpy.norm have the same issue, sometimes differing in the least significant bits.
 
+  The same is true of inner products.  For instance the following two vectors 
+  have different inner products (by one bit) in Matlab and numpy:
+
+      [ -199.29870031430442623 (c068e98ef3f627c2) 138.32340922732635136 (40614a595e4ed2ec) -45.549624050743560133 (c046c65a14b584f2) 19.213496343336956329 (403336a7b24472a4) ]
+
+	 [ -0.21694196198103754547 (bfcbc4c113eb5848) 0.10955569080042396046 (3fbc0bd77d14192a) -0.037693665894205273525 (bfa34c958c905d5b) 0.078641461218126110233 (3fb421d8c80aa001) ]
+
 - The problem is that while these are very small changes, they can magnify over the course of an optimization run, resulting in the algorithm taking a different path.  This makes it hard to test if the algorithms are really "the same" if we cannot rely on bit-wise comparisons *or even "approximately equal"*.
 
 - Never-the-less, I did replace some of the more complex operations in Matlab with algorithms that (more closely) mimic the way they are done in Matlab (as the reverse is not possible): mynorm and mycholupdate.  
@@ -44,7 +51,13 @@ A few notes on that attempt:
 
 Again, this is not to say that floating point arthmetic is not exact (I think most know that)!  This is to say that it is not reproducible across systems, because of the looseness of the IEEE standard, which only guarentees very simple operations be bit-level identical.  This is known among many, but not all.
 
-### Tests that fail
+### Tests that fail (as of Aug 23, 2021)
 
-- Test 03c fails because it depends on random choices and I cannot get the randomness to be the same between python and matlab easily
-- Test 11f fails because no matter which sparse Cholesky decomp I pick in Python, the sparsity (for a given level) is chosen differently than in Matlab.  
+Failures that are "okay" (seem to be due to slight variations in numeric processing, not because algorithm is incorrect or more unstable than Matlab version):
+- Tests A03c and B03c fail because it depends on random choices and I cannot get the randomness to be the same between python and matlab easily
+- Test A11f fails because no matter which sparse Cholesky decomp I pick in Python, the sparsity (for a given level) is chosen differently than in Matlab.  
+- Test B10e fails, seemingly because of small (one-bit) differences in inner products early that propagate.
+- Test B11f also fails (with a more dramatic deviation) due to small bit changes early.  In this case, Hessian and grad slight differences cause algorithm to choose different path.
+- Test B12 similarly fails
+- Test B14b fails because the "Adjusting Hessian" portion is unstable (even in the original Matlab).  Adding approximate 1e-12 to the diagonal isn't enough to really stablize the inversion.  Trying different methods in python, none produce the same answer as the Matlab code.
+
