@@ -40,7 +40,7 @@ On the tests performed, this python version does implement the same algorithm.  
 Currently this is not a python package (yes, that's a "to do").  The files `minFunc.py`, `lbfgsutil.py`, `autodif.py`, and `util.py` are sufficient to run the python version.  If placed in the same directory as the python code that uses them, the following example demonstrates how to use it.
 
 ```python
-from minFunc import minFunc
+from pyminfunc import minFunc
 import numpy as np
 
 def myf(x):
