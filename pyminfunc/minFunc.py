@@ -2,6 +2,8 @@
 # Aug 21, 2021
 # by Christian Shelton
 # based on code by Mark Schmidt
+# released under LGPL-2.1 Licence
+# see github.com/cshelton/pyminfunc
 import numpy as np
 from numpy.linalg import norm
 import scipy.linalg as la

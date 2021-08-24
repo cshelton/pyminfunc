@@ -35,9 +35,14 @@ The code has been tested for most of the paths through the algorithms on a handf
 
 On the tests performed, this python version does implement the same algorithm.  Small differences can accumulate and cause different optimization paths, but these (appear to) only happen at points where the underlying method is slightly unstable and one shouldn't expect to rely on the exact answer.
 
+## How to install
+
+Copy the directory `pyminfunc` to wherever your python installation expects
+packages to be.  
+
 ## How to use
 
-Currently this is not a python package (yes, that's a "to do").  The files `minFunc.py`, `lbfgsutil.py`, `autodif.py`, and `util.py` are sufficient to run the python version.  If placed in the same directory as the python code that uses them, the following example demonstrates how to use it.
+The following example demonstrates how to use it.
 
 ```python
 from pyminfunc import minFunc
