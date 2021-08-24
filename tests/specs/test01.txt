@@ -1,0 +1,5 @@
+silly silly
+0.5 -0.25
+useMex 0
+method cg
+display full

@@ -1,6 +1,6 @@
 import sys
-sys.path.insert(0,'../pyminfunc')
-from minFunc import minFunc
+sys.path.insert(0,'..')
+from pyminfunc import minFunc
 import numpy as np
 from testfns import *
 

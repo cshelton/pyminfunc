@@ -15,4 +15,6 @@ def debugstr(x):
     if isinstance(x,np.ndarray):
         mid = ' ' if len(x.shape)==1 else '\n'
         return '[ '+mid.join([debugstr(v) for v in x])+' ]'
+    if isinstance(x,list):
+        return '[ '+' '.join([debugstr(v) for v in x])+' ]'
     return '{:.20g} ({:s})'.format(x,tohex(x))

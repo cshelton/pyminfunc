@@ -1,6 +1,18 @@
 import numpy as np
 from scipy.optimize import rosen,rosen_der,rosen_hess
 
+def oned(x):
+    return x[0]**2,2*x
+
+def silly(x):
+     sinx1 = np.sin(x[1])
+     cosx1 = np.cos(x[1])
+     f = x[0]**2 * sinx1**2 + (x[1]-10)**2 + (x[0]-10)**2
+     g = np.array([2*x[0] * sinx1**2 + (x[0]-10),
+                   x[0]**2 * sinx1 * cosx1 + (x[1]-10)])
+     return f,g
+
+
 def rosenbrock1(x):
     return rosen(x)
 

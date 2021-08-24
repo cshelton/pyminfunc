@@ -8,7 +8,7 @@ import scipy.linalg as la
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 import scipy.sparse.linalg as sla
-#from debug import *
+#from .debug import *
 
 def isLegal(v):
     if not isinstance(v,np.ndarray): v = np.array(v)
@@ -158,7 +158,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
     LOposRemoved = 0
     while not done and LSiter < maxLS:
         # Find High and Low Points in bracket
-        LOpos = 0 if bracketFval[0]<bracketFval[1] else 1
+        LOpos = 0 if bracketFval[0]<=bracketFval[1] else 1
         f_LO = bracketFval[LOpos]
         HIpos = 1-LOpos
 
@@ -181,7 +181,7 @@ def WolfeLineSearch(x,t,d,f,g,gtd,c1,c2,LS_interp,LS_multi,maxLS,progTol,dprint,
         # Test that we are making sufficient progress
         maxbrac = max(bracket)
         minbrac = min(bracket)
-        if min(maxbrac-t,t-minbrac)/(maxbrac-minbrac) < 0.1:
+        if minbrac != maxbrac and min(maxbrac-t,t-minbrac)/(maxbrac-minbrac) < 0.1:
             dprint('Interpolation close to boundary',end='')
             if insufProgress or t>=maxbrac or t<=minbrac:
                 dprint(', Evaluating at 0.1 away from boundary')
@@ -347,7 +347,10 @@ def polyinterp(x,f,g,doPlot=0,xminBound=None,xmaxBound=None):
         minPos = 0 if x[0]<x[1] else 1
         minVal = x[minPos]
         notMinPos = 1-minPos
-        d1 = g[minPos] + g[notMinPos] - 3*(f[minPos]-f[notMinPos])/(x[minPos]-x[notMinPos])
+        d1den = (x[minPos]-x[notMinPos])
+        if d1den==0.0:
+            return (xmaxBound+xminBound)/2
+        d1 = g[minPos] + g[notMinPos] - 3*(f[minPos]-f[notMinPos])/d1den
         d2 = d1**2 - g[minPos]*g[notMinPos]
         if not np.any(d2 < 0):
             d2 = np.sqrt(d2)
