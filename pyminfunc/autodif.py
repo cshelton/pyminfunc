@@ -4,7 +4,7 @@
 # based on code by Mark Schmidt
 
 import numpy as np
-from debug import *
+#from debug import *
 
 
 def autoHv(v,x,g,useComplex,funObj,*args):

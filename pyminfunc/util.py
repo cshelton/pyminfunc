@@ -8,7 +8,7 @@ import scipy.linalg as la
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import spilu
 import scipy.sparse.linalg as sla
-from debug import *
+#from debug import *
 
 def isLegal(v):
     if not isinstance(v,np.ndarray): v = np.array(v)
