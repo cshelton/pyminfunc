@@ -1,0 +1,7 @@
+tests/*.pl
+tests/rosenlog.txt
+tests/testrosen.py
+*/__pycache__/
+__pycache__/
+*.swp
+tests/results/*

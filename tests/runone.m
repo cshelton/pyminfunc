@@ -4,9 +4,9 @@ if nargin<2
 	andquit=1
 end
 
-addpath('../minFunc_2012');
-addpath('../minFunc_2012/autoDif');
-addpath('../minFunc_2012/minFunc');
+addpath('./minFunc_2012');
+addpath('./minFunc_2012/autoDif');
+addpath('./minFunc_2012/minFunc');
 
 fid = fopen(filename);
 line = fgetl(fid);

@@ -25,6 +25,9 @@ decomposition).  And, if using Quasi-Newton, it requires `choldate`
 don't use with these options, commenting out the corresponding import line
 will have no bad effects.
 
+`choldate` is not available (currently) via `pip`.  It is available at
+https://github.com/modusdatascience/choldate with simple install instructions.
+
 ## Status
 
 The code has been tested for most of the paths through the algorithms on a handful of optimization problems (none very large).  It does *not* reproduce the results exactly (down to the last floating-point bit), mainly because 1) operations like Cholesky decompositions are performed differently in scipy and Matlab, and
