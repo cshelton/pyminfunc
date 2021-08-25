@@ -37,7 +37,7 @@ On the tests performed, this python version does implement the same algorithm.  
 
 ## How to install
 
-Copy the directory `pyminfunc` to wherever your python installation expects
+Copy the directory `pyminfunc/` (the one in `src/`) to wherever your python installation expects
 packages to be.  
 
 ## How to use
@@ -63,7 +63,7 @@ print(xmin)
 ```
 
 The options are supplied as a dictionary, as opposed to a structure (this is the
-only real change in the interface.  For full set of options, see Mark Schmidt's code at the moment.
+only real change in the interface).  For full set of options, see Mark Schmidt's code at the moment.
 
 ## Bugs
 

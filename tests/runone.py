@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0,'..')
+sys.path.insert(0,'../src')
 from pyminfunc import minFunc
 import numpy as np
 from testfns import *
