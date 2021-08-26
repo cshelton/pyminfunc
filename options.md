@@ -9,7 +9,7 @@ Mark Schmidt's minFunc (https://www.cs.ubc.ca/~schmidtm/Software/minFunc.html) c
 
 - `f` is a function called as `f(x,...)` where `...` are filled in with `*args`.  `x` will be of shape (N,).
 
-	It should return `(v,g)` where v is the value of the function at `x` and `g` is the gradient (with shape (N,)).  If a Hessian is required, it should return `(v,g,H)` where `H` is the Hessian at `x` (shape (N,N)).  If a tensor is required, it will should return `(v,g,H,T)` where `T` is the tensor of 3rd derviaties (shape (N,N,N)).
+	It should return `(v,g)` where v is the value of the function at `x` and `g` is the gradient (with shape (N,)).  If a Hessian is required, it should return `(v,g,H)` where `H` is the Hessian at `x` (shape (N,N)).  If a tensor is required, it will should return `(v,g,H,T)` where `T` is the tensor of 3rd derviaties (shape (N,N,N)).  Some of these can be omitted by using the numDiff option, below.
 
 - `x0` starting point for optimization (shape (N,)).
 - options: a dictionary mapping strings to values.  See below
