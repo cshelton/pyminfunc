@@ -7,28 +7,28 @@ Mark Schmidt's minFunc (https://www.cs.ubc.ca/~schmidtm/Software/minFunc.html) c
 
 `minFunc(f,x0,options,*args)`:
 
-	- `f` is a function of the form `f(x,...)` where `...` are filled in with `*args`.  `x` will be of shape (N,).
+- `f` is a function of the form `f(x,...)` where `...` are filled in with `*args`.  `x` will be of shape (N,).
 
-	It should return `(v,g)` where v is the value of the function at `x` and `g` is the gradient (with shape (N,)).  If a Hessian is required, it should return `(v,g,H)` where `H` is the Hessian at `x` (shape (N,N)).  If a tensor is required, it will should return `(v,g,H,T)` where `T` is the tensor of 3rd derviaties (shape (N,N,N)).
+It should return `(v,g)` where v is the value of the function at `x` and `g` is the gradient (with shape (N,)).  If a Hessian is required, it should return `(v,g,H)` where `H` is the Hessian at `x` (shape (N,N)).  If a tensor is required, it will should return `(v,g,H,T)` where `T` is the tensor of 3rd derviaties (shape (N,N,N)).
 
-	- `x0` starting point for optimization (shape (N,)).
-	- options: a dictionary mapping strings to values.  See below
+- `x0` starting point for optimization (shape (N,)).
+- options: a dictionary mapping strings to values.  See below
 
-	- returns `(x,fval,exitflag,output)` (or subset of these -- see noutputs option): `x` is the "argmin of f" and fval is the corresponding "min of f."  `exitflag` is the exit condition:
-		- -1: stopped by output function
-		- 0: max number of iteration/evals reached
-		- 1: optimality condition reached
-		- 2: step size or value change too small
-		output is a structure (of type `outputT`) that has fields
-		- iterations: number of iterations
-		- funcCount: number of function evaluations
-		- algorithm: algorithm used (as a number)
-		- firstorderopt: first-order optimality
-		- message: exit message
-		- trace: structure (of type `traceT`) that has the fields
-			- fval: list of function values after each iteration
-			- funcCount: list of function evalution counts after each iteration
-			- optCond: list of optimality condition after each iteration
+- returns `(x,fval,exitflag,output)` (or subset of these -- see noutputs option): `x` is the "argmin of f" and fval is the corresponding "min of f."  `exitflag` is the exit condition:
+	- -1: stopped by output function
+	- 0: max number of iteration/evals reached
+	- 1: optimality condition reached
+	- 2: step size or value change too small
+	output is a structure (of type `outputT`) that has fields
+	- iterations: number of iterations
+	- funcCount: number of function evaluations
+	- algorithm: algorithm used (as a number)
+	- firstorderopt: first-order optimality
+	- message: exit message
+	- trace: structure (of type `traceT`) that has the fields
+		- fval: list of function values after each iteration
+		- funcCount: list of function evalution counts after each iteration
+		- optCond: list of optimality condition after each iteration
 
 Below is a description of the possible parameters and defaults, as cribbed from the comments in Schmidt's code.  Capitalization does not matter.
 
