@@ -63,7 +63,7 @@ print(xmin)
 ```
 
 The options are supplied as a dictionary, as opposed to a structure (this is the
-only real change in the interface).  For full set of options, see Mark Schmidt's code at the moment.
+only real change in the interface).  See [here](options.md) for documentation on the options possible.
 
 ## Bugs
 

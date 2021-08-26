@@ -125,7 +125,7 @@ def minFunc(funObj,x0,options=None,*args):
     if o.outputFcn is not None:
         stop = o.outputFcn(x,'init',0,funEvals,f,None,None,g,None,np.max(np.abs(g)),*args)
         if stop:
-            exitflag = 1
+            exitflag = -1
             msg = 'Stopped by output function'
             if o.verbose: print(msg)
             if o.noutputs>3:
