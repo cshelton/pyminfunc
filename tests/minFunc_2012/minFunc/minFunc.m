@@ -948,7 +948,7 @@ for i = 1:maxIter
                 [junk1 junk2 junk3 T] = funObj(x,varargin{:});
             end
             options_sub.Method = 'newton';
-            options_sub.Display = 'full';
+            options_sub.Display = 'none';
             options_sub.progTol = progTol;
             options_sub.optTol = optTol;
             d = minFunc(@taylorModel,zeros(p,1),options_sub,f,g,H,T);

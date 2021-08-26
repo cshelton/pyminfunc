@@ -18,10 +18,12 @@ in minFunc, but just to provide their equivalences in python.
 
 The code requires `numpy` and `scipy`.
 
-Additionally, if running Newton's
-method with cgSolve<0, it requires `ilupp` (for an incomplete Cholesky
-decomposition).  And, if using Quasi-Newton, it requires `choldate`
-(for Cholesky updating and downdating).  If you cannot get these packages and 
+Optionally, requires the following packages:
+- `ilupp` if running Newton's method with cgSolve<0
+- `matplotlib` if display option set to 'excessive'
+- `choldate` if running quasi-Newton
+
+If you cannot get these packages and 
 don't use with these options, commenting out the corresponding import line
 will have no bad effects.
 

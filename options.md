@@ -228,6 +228,17 @@ whether to compute derivatives numerically at initial point and compare to user-
 
 ### Other Options
 
+#### display [default: on]
+level of the display (to stdout)
+
+possible values (string):
+- off or none: no display
+- final: display final message 
+- on or iter: display table of iterations and final message
+- full: on + debugging information
+- excessive: full + plotting (plots poly interpolation at each step)
+
+
 #### noutputs [default: 3]
 How many of the outputs to return from the normal tuple `(x,f,exitflag,output)`.
 [Original Matlab code could detect number of used outputs and only calculate those needed.  x, f, and exitflag don't take any extra time/space to return.  output takes a bit of extra space to store, so by default it is not returned.]
@@ -249,11 +260,3 @@ function to be called after every iteration; called as
 
 #### useMex [default: 1]
 not used in this code.  In original Matlab code, indicated whether to use mex code (ie compiled C code) instead of Matlab code for some routines.
-
-
-
-
-
-
-
-

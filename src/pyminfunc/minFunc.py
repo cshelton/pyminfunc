@@ -560,7 +560,7 @@ def minFunc(funObj,x0,options=None,*args):
             else:
                 T = funObj(x,*args)[3]
             d = minFunc(taylorModel,np.zeros(p),
-                    {'Method':'newton','Display':'full','progTol':o.progTol,'optTol':o.optTol},
+                    {'Method':'newton','Display':'none','progTol':o.progTol,'optTol':o.optTol},
                     f,g,H,T)[0]
 
             if np.any(np.abs(d) > 1e5) or np.all(np.abs(d) < 1e-5) or g.T@d > -o.progTol:
